@@ -54,13 +54,15 @@ var (
 )
 
 func TestNewGoHandler(t *testing.T) {
-	options := getDefaultOptions()
-	goHandler := NewGoHandler(&defaultHandlerConfig, options, func(event *types.Event) error {
+	values := &handlerValues{}
+	options := getDefaultOptions(values)
+	goHandler, err := NewGoHandler(&defaultHandlerConfig, options, func(event *types.Event) error {
 		return nil
 	}, func(event *types.Event) error {
 		return nil
 	})
 
+	assert.Nil(t, err)
 	assert.NotNil(t, goHandler)
 	assert.NotNil(t, goHandler.options)
 	assert.Equal(t, options, goHandler.options)
@@ -70,19 +72,36 @@ func TestNewGoHandler(t *testing.T) {
 	assert.NotNil(t, goHandler.executeFunction)
 	assert.Nil(t, goHandler.sensuEvent)
 	assert.Equal(t, os.Stdin, goHandler.eventReader)
-	assert.NotNil(t, goHandler.cmdArgs)
+}
+
+func TestNewGoHandler_NoOptionValue(t *testing.T) {
+	options := getDefaultOptions(nil)
+	handlerConfig := defaultHandlerConfig
+
+	goHandler, err := NewGoHandler(&handlerConfig, options,
+		func(event *types.Event) error {
+			return nil
+		}, func(event *types.Event) error {
+			return nil
+		})
+
+	assert.Nil(t, err)
+	assert.NotNil(t, goHandler)
+
+	err = goHandler.Execute()
+	assert.NotNil(t, err)
 }
 
 func goHandlerExecuteUtil(t *testing.T, handlerConfig *PluginConfig, eventFile string, cmdLineArgs []string,
 	validationFunction func(*types.Event) error, executeFunction func(*types.Event) error,
 	expectedValue1 interface{}, expectedValue2 interface{}, expectedValue3 interface{}) error {
-	options := getDefaultOptions()
 	values := handlerValues{}
-	options[0].Value = &values.arg1
-	options[1].Value = &values.arg2
-	options[2].Value = &values.arg3
+	options := getDefaultOptions(&values)
 
-	goHandler := NewGoHandler(handlerConfig, options, validationFunction, executeFunction)
+	goHandler, err := NewGoHandler(handlerConfig, options, validationFunction, executeFunction)
+	if err != nil {
+		return err
+	}
 
 	if len(cmdLineArgs) > 0 {
 		goHandler.cmdArgs.SetArgs(cmdLineArgs)
@@ -92,7 +111,7 @@ func goHandlerExecuteUtil(t *testing.T, handlerConfig *PluginConfig, eventFile s
 
 	// Replace stdin reader with file reader
 	goHandler.eventReader = getFileReader(eventFile)
-	err := goHandler.Execute()
+	err = goHandler.Execute()
 
 	assert.Equal(t, expectedValue1, values.arg1)
 	assert.Equal(t, expectedValue2, values.arg2)
@@ -526,27 +545,6 @@ func TestGoHandler_Execute_NoKeyspace(t *testing.T) {
 	assert.True(t, executeCalled)
 }
 
-func TestGoHandler_Execute_NoOptionValue(t *testing.T) {
-	options := getDefaultOptions()
-	handlerConfig := defaultHandlerConfig
-
-	goHandler := NewGoHandler(&handlerConfig, options,
-		func(event *types.Event) error {
-			return nil
-		}, func(event *types.Event) error {
-			return nil
-		})
-
-	goHandler.cmdArgs.SetArgs(defaultCmdLineArgs)
-
-	// Replace stdin reader with file reader
-	goHandler.eventReader = getFileReader("test/event-check-entity-override.json")
-	err := goHandler.Execute()
-
-	assert.NotNil(t, err)
-	assert.Errorf(t, err, "Option value must not be nil for option arg1")
-}
-
 func getFileReader(file string) io.Reader {
 	reader, _ := os.Open(file)
 	return reader
@@ -558,9 +556,18 @@ func clearEnvironment() {
 	_ = os.Unsetenv("ENV_3")
 }
 
-func getDefaultOptions() []*PluginConfigOption {
+func getDefaultOptions(values *handlerValues) []*PluginConfigOption {
 	option1 := defaultOption1
 	option2 := defaultOption2
 	option3 := defaultOption3
+	if values != nil {
+		option1.Value = &values.arg1
+		option2.Value = &values.arg2
+		option3.Value = &values.arg3
+	} else {
+		option1.Value = nil
+		option2.Value = nil
+		option3.Value = nil
+	}
 	return []*PluginConfigOption{&option1, &option2, &option3}
 }

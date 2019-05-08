@@ -31,17 +31,26 @@ type PluginConfig struct {
 }
 
 type GoPlugin struct {
-	config      *PluginConfig
-	options     []*PluginConfigOption
-	sensuEvent  *types.Event
-	eventReader io.Reader
-	cmdArgs     *args.Args
+	config                 *PluginConfig
+	options                []*PluginConfigOption
+	sensuEvent             *types.Event
+	eventReader            io.Reader
+	pluginWorkflowFunction func(args []string) error
+	cmdArgs                *args.Args
+	readEvent              bool
+	eventMandatory         bool
+	configurationOverrides bool
 }
 
 func (goPlugin *GoPlugin) readSensuEvent() error {
 	eventJSON, err := ioutil.ReadAll(goPlugin.eventReader)
 	if err != nil {
-		return fmt.Errorf("Failed to read STDIN: %s", err)
+		if goPlugin.eventMandatory {
+			return fmt.Errorf("Failed to read STDIN: %s", err)
+		} else {
+			// if event is not mandatory return without going any further
+			return nil
+		}
 	}
 
 	sensuEvent := &types.Event{}
@@ -58,10 +67,14 @@ func (goPlugin *GoPlugin) readSensuEvent() error {
 	return nil
 }
 
-func (goPlugin *GoPlugin) setupArgs() error {
+func (goPlugin *GoPlugin) initPlugin() {
+	goPlugin.cmdArgs = args.NewArgs(goPlugin.config.Name, goPlugin.config.Short, goPlugin.cobraExecuteFunction)
+}
+
+func (goPlugin *GoPlugin) setupArguments() error {
 	for _, option := range goPlugin.options {
 		if option.Value == nil {
-			return fmt.Errorf("Option value must not be nil for option %s", option.Argument)
+			return fmt.Errorf("Option value must not be nil for %s", option.Argument)
 		}
 
 		switch (option.Value).(type) {
@@ -81,6 +94,43 @@ func (goPlugin *GoPlugin) setupArgs() error {
 	}
 
 	return nil
+}
+
+// cobraExecuteFunction is called by the argument's execute. The configuration overrides will be processed if necessary
+// and the pluginWorkflowFunction function executed
+func (goPlugin *GoPlugin) cobraExecuteFunction(args []string) error {
+	// Read the Sensu event if required
+	if goPlugin.readEvent {
+		err := goPlugin.readSensuEvent()
+		if err != nil {
+			return err
+		}
+	}
+
+	// If there is an event process configuration overrides if necessary
+	if goPlugin.sensuEvent != nil && goPlugin.configurationOverrides {
+		err := configurationOverrides(goPlugin.config, goPlugin.options, goPlugin.sensuEvent)
+		if err != nil {
+			return err
+		}
+	}
+
+	return goPlugin.pluginWorkflowFunction(args)
+}
+
+func (goPlugin *GoPlugin) Execute() error {
+	// Validate the arguments are set
+	if goPlugin.cmdArgs == nil {
+		return fmt.Errorf("Arguments must be initialized")
+	}
+
+	err := goPlugin.setupArguments()
+	if err != nil {
+		return err
+	}
+
+	// This will call the pluginWorkflowFunction function which implements the custom logic for that type of plugin.
+	return goPlugin.cmdArgs.Execute()
 }
 
 func validateEvent(event *types.Event) error {
@@ -143,20 +193,22 @@ func configurationOverrides(config *PluginConfig, options []*PluginConfigOption,
 	for _, opt := range options {
 		if len(opt.Path) > 0 {
 			// compile the Annotation keyspace to look for configuration overrides
-			k := path.Join(config.Keyspace, opt.Path)
+			key := path.Join(config.Keyspace, opt.Path)
 			switch {
-			case len(event.Check.Annotations[k]) > 0:
-				err := setOptionValue(opt, event.Check.Annotations[k])
+			case len(event.Check.Annotations[key]) > 0:
+				err := setOptionValue(opt, event.Check.Annotations[key])
 				if err != nil {
 					return err
 				}
-				log.Printf("Overriding default handler configuration with value of \"Check.Annotations.%s\" (\"%s\")\n", k, event.Check.Annotations[k])
-			case len(event.Entity.Annotations[k]) > 0:
-				err := setOptionValue(opt, event.Entity.Annotations[k])
+				log.Printf("Overriding default handler configuration with value of \"Check.Annotations.%s\" (\"%s\")\n",
+					key, event.Check.Annotations[key])
+			case len(event.Entity.Annotations[key]) > 0:
+				err := setOptionValue(opt, event.Entity.Annotations[key])
 				if err != nil {
 					return err
 				}
-				log.Printf("Overriding default handler configuration with value of \"Check.Annotations.%s\" (\"%s\")\n", k, event.Entity.Annotations[k])
+				log.Printf("Overriding default handler configuration with value of \"Check.Annotations.%s\" (\"%s\")\n",
+					key, event.Entity.Annotations[key])
 			}
 		}
 	}
