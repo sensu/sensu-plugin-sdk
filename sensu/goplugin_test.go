@@ -2,6 +2,8 @@ package sensu
 
 import (
 	"github.com/stretchr/testify/assert"
+	"io"
+	"os"
 	"testing"
 )
 
@@ -66,4 +68,15 @@ func TestSetOptionValue_InvalidBool(t *testing.T) {
 	err := setOptionValue(&option, "yes")
 	assert.NotNil(t, err)
 	assert.Equal(t, false, finalValue)
+}
+
+func getFileReader(file string) io.Reader {
+	reader, _ := os.Open(file)
+	return reader
+}
+
+func clearEnvironment() {
+	_ = os.Unsetenv("ENV_1")
+	_ = os.Unsetenv("ENV_2")
+	_ = os.Unsetenv("ENV_3")
 }
