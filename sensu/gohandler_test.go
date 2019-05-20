@@ -55,13 +55,12 @@ var (
 func TestNewGoHandler(t *testing.T) {
 	values := &handlerValues{}
 	options := getHandlerOptions(values)
-	goHandler, err := NewGoHandler(&defaultHandlerConfig, options, func(event *types.Event) error {
+	goHandler := NewGoHandler(&defaultHandlerConfig, options, func(event *types.Event) error {
 		return nil
 	}, func(event *types.Event) error {
 		return nil
 	})
 
-	assert.Nil(t, err)
 	assert.NotNil(t, goHandler)
 	assert.NotNil(t, goHandler.options)
 	assert.Equal(t, options, goHandler.options)
@@ -74,56 +73,65 @@ func TestNewGoHandler(t *testing.T) {
 }
 
 func TestNewGoHandler_NoOptionValue(t *testing.T) {
+	var exitStatus int
 	options := getHandlerOptions(nil)
 	handlerConfig := defaultHandlerConfig
 
-	goHandler, err := NewGoHandler(&handlerConfig, options,
+	goHandler := NewGoHandler(&handlerConfig, options,
 		func(event *types.Event) error {
 			return nil
 		}, func(event *types.Event) error {
 			return nil
 		})
 
-	assert.Nil(t, err)
 	assert.NotNil(t, goHandler)
 
-	err = goHandler.Execute()
-	assert.NotNil(t, err)
+	goHandler.exitFunction = func(i int) {
+		exitStatus = i
+	}
+	goHandler.Execute()
+	assert.Equal(t, 1, exitStatus)
 }
 
 func goHandlerExecuteUtil(t *testing.T, handlerConfig *PluginConfig, eventFile string, cmdLineArgs []string,
 	validationFunction func(*types.Event) error, executeFunction func(*types.Event) error,
-	expectedValue1 interface{}, expectedValue2 interface{}, expectedValue3 interface{}) error {
+	expectedValue1 interface{}, expectedValue2 interface{}, expectedValue3 interface{}) (int, string) {
 	values := handlerValues{}
 	options := getHandlerOptions(&values)
 
-	goHandler, err := NewGoHandler(handlerConfig, options, validationFunction, executeFunction)
-	if err != nil {
-		return err
-	}
+	goHandler := NewGoHandler(handlerConfig, options, validationFunction, executeFunction)
 
+	// Simulate the command line arguments if necessary
 	if len(cmdLineArgs) > 0 {
 		goHandler.cmdArgs.SetArgs(cmdLineArgs)
 	} else {
 		goHandler.cmdArgs.SetArgs([]string{})
 	}
 
-	// Replace stdin reader with file reader
+	// Replace stdin reader with file reader and exitFunction with our own so we can know the exit status
+	var exitStatus int
+	var errorStr = ""
 	goHandler.eventReader = getFileReader(eventFile)
-	err = goHandler.Execute()
+	goHandler.exitFunction = func(i int) {
+		exitStatus = i
+	}
+	goHandler.errorLogFunction = func(format string, a ...interface{}) {
+		errorStr = fmt.Sprintf(format, a...)
+	}
+	goHandler.Execute()
 
 	assert.Equal(t, expectedValue1, values.arg1)
 	assert.Equal(t, expectedValue2, values.arg2)
 	assert.Equal(t, expectedValue3, values.arg3)
 
-	return err
+	return exitStatus, errorStr
 }
 
 // Test check override
 func TestGoHandler_Execute_Check(t *testing.T) {
 	var validateCalled, executeCalled bool
 	clearEnvironment()
-	err := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-check-override.json", nil,
+	exitStatus, _ := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-check-override.json", nil,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -134,7 +142,7 @@ func TestGoHandler_Execute_Check(t *testing.T) {
 			return nil
 		},
 		"value-check1", uint64(1357), false)
-	assert.Nil(t, err)
+	assert.Equal(t, 0, exitStatus)
 	assert.True(t, validateCalled)
 	assert.True(t, executeCalled)
 }
@@ -143,7 +151,7 @@ func TestGoHandler_Execute_Check(t *testing.T) {
 func TestGoHandler_Execute_CheckInvalidValue(t *testing.T) {
 	var validateCalled, executeCalled bool
 	clearEnvironment()
-	err := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-check-override-invalid-value.json", nil,
+	exitStatus, _ := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-check-override-invalid-value.json", nil,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -154,7 +162,7 @@ func TestGoHandler_Execute_CheckInvalidValue(t *testing.T) {
 			return nil
 		},
 		"value-check1", uint64(33333), false)
-	assert.NotNil(t, err)
+	assert.Equal(t, 1, exitStatus)
 	assert.False(t, validateCalled)
 	assert.False(t, executeCalled)
 }
@@ -163,7 +171,7 @@ func TestGoHandler_Execute_CheckInvalidValue(t *testing.T) {
 func TestGoHandler_Execute_Entity(t *testing.T) {
 	var validateCalled, executeCalled bool
 	clearEnvironment()
-	err := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-entity-override.json", nil,
+	exitStatus, _ := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-entity-override.json", nil,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -175,7 +183,7 @@ func TestGoHandler_Execute_Entity(t *testing.T) {
 		},
 		"value-entity1", uint64(2468), true)
 
-	assert.Nil(t, err)
+	assert.Equal(t, 0, exitStatus)
 	assert.True(t, validateCalled)
 	assert.True(t, executeCalled)
 }
@@ -184,7 +192,7 @@ func TestGoHandler_Execute_Entity(t *testing.T) {
 func TestGoHandler_Execute_EntityInvalidValue(t *testing.T) {
 	var validateCalled, executeCalled bool
 	clearEnvironment()
-	err := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-entity-override-invalid-value.json", nil,
+	exitStatus, _ := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-entity-override-invalid-value.json", nil,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -196,7 +204,7 @@ func TestGoHandler_Execute_EntityInvalidValue(t *testing.T) {
 		},
 		"value-entity1", uint64(33333), false)
 
-	assert.NotNil(t, err)
+	assert.Equal(t, 1, exitStatus)
 	assert.False(t, validateCalled)
 	assert.False(t, executeCalled)
 }
@@ -208,7 +216,7 @@ func TestGoHandler_Execute_Environment(t *testing.T) {
 	_ = os.Setenv("ENV_1", "value-env1")
 	_ = os.Setenv("ENV_2", "9753")
 	_ = os.Setenv("ENV_3", "true")
-	err := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-no-override.json", nil,
+	exitStatus, _ := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-no-override.json", nil,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -219,7 +227,7 @@ func TestGoHandler_Execute_Environment(t *testing.T) {
 			return nil
 		},
 		"value-env1", uint64(9753), true)
-	assert.Nil(t, err)
+	assert.Equal(t, 0, exitStatus)
 	assert.True(t, validateCalled)
 	assert.True(t, executeCalled)
 }
@@ -228,7 +236,7 @@ func TestGoHandler_Execute_Environment(t *testing.T) {
 func TestGoHandler_Execute_CmdLineArgs(t *testing.T) {
 	var validateCalled, executeCalled bool
 	clearEnvironment()
-	err := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-no-override.json", defaultCmdLineArgs,
+	exitStatus, _ := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-no-override.json", defaultCmdLineArgs,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -239,7 +247,7 @@ func TestGoHandler_Execute_CmdLineArgs(t *testing.T) {
 			return nil
 		},
 		"value-arg1", uint64(7531), false)
-	assert.Nil(t, err)
+	assert.Equal(t, 0, exitStatus)
 	assert.True(t, validateCalled)
 	assert.True(t, executeCalled)
 }
@@ -251,7 +259,7 @@ func TestGoHandler_Execute_PriorityCheck(t *testing.T) {
 	_ = os.Setenv("ENV_1", "value-env1")
 	_ = os.Setenv("ENV_2", "9753")
 	_ = os.Setenv("ENV_3", "true")
-	err := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-check-entity-override.json", defaultCmdLineArgs,
+	exitStatus, _ := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-check-entity-override.json", defaultCmdLineArgs,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -262,7 +270,7 @@ func TestGoHandler_Execute_PriorityCheck(t *testing.T) {
 			return nil
 		},
 		"value-check1", uint64(1357), false)
-	assert.Nil(t, err)
+	assert.Equal(t, 0, exitStatus)
 	assert.True(t, validateCalled)
 	assert.True(t, executeCalled)
 }
@@ -274,7 +282,7 @@ func TestGoHandler_Execute_PriorityEntity(t *testing.T) {
 	_ = os.Setenv("ENV_1", "value-env1")
 	_ = os.Setenv("ENV_2", "9753")
 	_ = os.Setenv("ENV_3", "true")
-	err := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-entity-override.json", defaultCmdLineArgs,
+	exitStatus, _ := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-entity-override.json", defaultCmdLineArgs,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -285,7 +293,7 @@ func TestGoHandler_Execute_PriorityEntity(t *testing.T) {
 			return nil
 		},
 		"value-entity1", uint64(2468), true)
-	assert.Nil(t, err)
+	assert.Equal(t, 0, exitStatus)
 	assert.True(t, validateCalled)
 	assert.True(t, executeCalled)
 }
@@ -297,7 +305,7 @@ func TestGoHandler_Execute_PriorityCmdLine(t *testing.T) {
 	_ = os.Setenv("ENV_1", "value-env1")
 	_ = os.Setenv("ENV_2", "9753")
 	_ = os.Setenv("ENV_3", "true")
-	err := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-no-override.json", defaultCmdLineArgs,
+	exitStatus, _ := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-no-override.json", defaultCmdLineArgs,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -308,7 +316,7 @@ func TestGoHandler_Execute_PriorityCmdLine(t *testing.T) {
 			return nil
 		},
 		"value-arg1", uint64(7531), false)
-	assert.Nil(t, err)
+	assert.Equal(t, 0, exitStatus)
 	assert.True(t, validateCalled)
 	assert.True(t, executeCalled)
 }
@@ -317,7 +325,7 @@ func TestGoHandler_Execute_PriorityCmdLine(t *testing.T) {
 func TestGoHandler_Execute_ValidationError(t *testing.T) {
 	var validateCalled, executeCalled bool
 	clearEnvironment()
-	err := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-no-override.json", defaultCmdLineArgs,
+	exitStatus, errorStr := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-no-override.json", defaultCmdLineArgs,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -327,8 +335,8 @@ func TestGoHandler_Execute_ValidationError(t *testing.T) {
 			return nil
 		},
 		"value-arg1", uint64(7531), false)
-	assert.NotNil(t, err)
-	assert.EqualError(t, err, "error validating input: validation error")
+	assert.Equal(t, 1, exitStatus)
+	assert.Contains(t, errorStr, "error validating input: validation error")
 	assert.True(t, validateCalled)
 	assert.False(t, executeCalled)
 }
@@ -337,7 +345,7 @@ func TestGoHandler_Execute_ValidationError(t *testing.T) {
 func TestGoHandler_Execute_ExecuteError(t *testing.T) {
 	var validateCalled, executeCalled bool
 	clearEnvironment()
-	err := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-no-override.json", defaultCmdLineArgs,
+	exitStatus, errorStr := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-no-override.json", defaultCmdLineArgs,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -348,8 +356,8 @@ func TestGoHandler_Execute_ExecuteError(t *testing.T) {
 			return fmt.Errorf("execution error")
 		},
 		"value-arg1", uint64(7531), false)
-	assert.NotNil(t, err)
-	assert.EqualError(t, err, "error executing handler: execution error")
+	assert.Equal(t, 1, exitStatus)
+	assert.Contains(t, errorStr, "error executing handler: execution error")
 	assert.True(t, validateCalled)
 	assert.True(t, executeCalled)
 }
@@ -358,7 +366,7 @@ func TestGoHandler_Execute_ExecuteError(t *testing.T) {
 func TestGoHandler_Execute_EventNoTimestamp(t *testing.T) {
 	var validateCalled, executeCalled bool
 	clearEnvironment()
-	err := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-no-timestamp.json", defaultCmdLineArgs,
+	exitStatus, errorStr := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-no-timestamp.json", defaultCmdLineArgs,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -369,8 +377,8 @@ func TestGoHandler_Execute_EventNoTimestamp(t *testing.T) {
 			return nil
 		},
 		"value-arg1", uint64(7531), false)
-	assert.NotNil(t, err)
-	assert.EqualError(t, err, "timestamp is missing or must be greater than zero")
+	assert.Equal(t, 1, exitStatus)
+	assert.Contains(t, errorStr, "timestamp is missing or must be greater than zero")
 	assert.False(t, validateCalled)
 	assert.False(t, executeCalled)
 }
@@ -379,7 +387,7 @@ func TestGoHandler_Execute_EventNoTimestamp(t *testing.T) {
 func TestGoHandler_Execute_EventTimestampZero(t *testing.T) {
 	var validateCalled, executeCalled bool
 	clearEnvironment()
-	err := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-timestamp-zero.json", defaultCmdLineArgs,
+	exitStatus, errorStr := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-timestamp-zero.json", defaultCmdLineArgs,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -390,8 +398,8 @@ func TestGoHandler_Execute_EventTimestampZero(t *testing.T) {
 			return nil
 		},
 		"value-arg1", uint64(7531), false)
-	assert.NotNil(t, err)
-	assert.EqualError(t, err, "timestamp is missing or must be greater than zero")
+	assert.Equal(t, 1, exitStatus)
+	assert.Contains(t, errorStr, "timestamp is missing or must be greater than zero")
 	assert.False(t, validateCalled)
 	assert.False(t, executeCalled)
 }
@@ -400,7 +408,7 @@ func TestGoHandler_Execute_EventTimestampZero(t *testing.T) {
 func TestGoHandler_Execute_EventNoEntity(t *testing.T) {
 	var validateCalled, executeCalled bool
 	clearEnvironment()
-	err := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-no-entity.json", defaultCmdLineArgs,
+	exitStatus, errorStr := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-no-entity.json", defaultCmdLineArgs,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -411,8 +419,8 @@ func TestGoHandler_Execute_EventNoEntity(t *testing.T) {
 			return nil
 		},
 		"value-arg1", uint64(7531), false)
-	assert.NotNil(t, err)
-	assert.EqualError(t, err, "entity is missing from event")
+	assert.Equal(t, 1, exitStatus)
+	assert.Contains(t, errorStr, "entity is missing from event")
 	assert.False(t, validateCalled)
 	assert.False(t, executeCalled)
 }
@@ -421,7 +429,7 @@ func TestGoHandler_Execute_EventNoEntity(t *testing.T) {
 func TestGoHandler_Execute_EventInvalidEntity(t *testing.T) {
 	var validateCalled, executeCalled bool
 	clearEnvironment()
-	err := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-invalid-entity.json", defaultCmdLineArgs,
+	exitStatus, errorStr := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-invalid-entity.json", defaultCmdLineArgs,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -432,8 +440,8 @@ func TestGoHandler_Execute_EventInvalidEntity(t *testing.T) {
 			return nil
 		},
 		"value-arg1", uint64(7531), false)
-	assert.NotNil(t, err)
-	assert.EqualError(t, err, "entity name must not be empty")
+	assert.Equal(t, 1, exitStatus)
+	assert.Contains(t, errorStr, "entity name must not be empty")
 	assert.False(t, validateCalled)
 	assert.False(t, executeCalled)
 }
@@ -442,7 +450,7 @@ func TestGoHandler_Execute_EventInvalidEntity(t *testing.T) {
 func TestGoHandler_Execute_EventNoCheck(t *testing.T) {
 	var validateCalled, executeCalled bool
 	clearEnvironment()
-	err := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-no-check.json", defaultCmdLineArgs,
+	exitStatus, errorStr := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-no-check.json", defaultCmdLineArgs,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -453,8 +461,8 @@ func TestGoHandler_Execute_EventNoCheck(t *testing.T) {
 			return nil
 		},
 		"value-arg1", uint64(7531), false)
-	assert.NotNil(t, err)
-	assert.EqualError(t, err, "check is missing from event")
+	assert.Equal(t, 1, exitStatus)
+	assert.Contains(t, errorStr, "check is missing from event")
 	assert.False(t, validateCalled)
 	assert.False(t, executeCalled)
 }
@@ -463,7 +471,7 @@ func TestGoHandler_Execute_EventNoCheck(t *testing.T) {
 func TestGoHandler_Execute_EventInvalidCheck(t *testing.T) {
 	var validateCalled, executeCalled bool
 	clearEnvironment()
-	err := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-invalid-check.json", defaultCmdLineArgs,
+	exitStatus, errorStr := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-invalid-check.json", defaultCmdLineArgs,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -474,8 +482,8 @@ func TestGoHandler_Execute_EventInvalidCheck(t *testing.T) {
 			return nil
 		},
 		"value-arg1", uint64(7531), false)
-	assert.NotNil(t, err)
-	assert.EqualError(t, err, "check name must not be empty")
+	assert.Equal(t, 1, exitStatus)
+	assert.Contains(t, errorStr, "check name must not be empty")
 	assert.False(t, validateCalled)
 	assert.False(t, executeCalled)
 }
@@ -484,7 +492,7 @@ func TestGoHandler_Execute_EventInvalidCheck(t *testing.T) {
 func TestGoHandler_Execute_EventInvalidJson(t *testing.T) {
 	var validateCalled, executeCalled bool
 	clearEnvironment()
-	err := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-invalid-json.json", defaultCmdLineArgs,
+	exitStatus, errorStr := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-invalid-json.json", defaultCmdLineArgs,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -495,8 +503,8 @@ func TestGoHandler_Execute_EventInvalidJson(t *testing.T) {
 			return nil
 		},
 		"value-arg1", uint64(7531), false)
-	assert.NotNil(t, err)
-	assert.EqualError(t, err, "Failed to unmarshal STDIN data: invalid character ':' after object key:value pair")
+	assert.Equal(t, 1, exitStatus)
+	assert.Contains(t, errorStr, "Failed to unmarshal STDIN data: invalid character ':' after object key:value pair")
 	assert.False(t, validateCalled)
 	assert.False(t, executeCalled)
 }
@@ -505,7 +513,7 @@ func TestGoHandler_Execute_EventInvalidJson(t *testing.T) {
 func TestGoHandler_Execute_ReaderError(t *testing.T) {
 	var validateCalled, executeCalled bool
 	clearEnvironment()
-	err := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-invalid-json.json", defaultCmdLineArgs,
+	exitStatus, errorStr := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-invalid-json.json", defaultCmdLineArgs,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -516,8 +524,8 @@ func TestGoHandler_Execute_ReaderError(t *testing.T) {
 			return nil
 		},
 		"value-arg1", uint64(7531), false)
-	assert.NotNil(t, err)
-	assert.EqualError(t, err, "Failed to unmarshal STDIN data: invalid character ':' after object key:value pair")
+	assert.Equal(t, 1, exitStatus)
+	assert.Contains(t, errorStr, "Failed to unmarshal STDIN data: invalid character ':' after object key:value pair")
 	assert.False(t, validateCalled)
 	assert.False(t, executeCalled)
 }
@@ -528,7 +536,7 @@ func TestGoHandler_Execute_NoKeyspace(t *testing.T) {
 	clearEnvironment()
 	handlerConfig := defaultHandlerConfig
 	handlerConfig.Keyspace = ""
-	err := goHandlerExecuteUtil(t, &handlerConfig, "test/event-check-entity-override.json", defaultCmdLineArgs,
+	exitStatus, _ := goHandlerExecuteUtil(t, &handlerConfig, "test/event-check-entity-override.json", defaultCmdLineArgs,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -539,7 +547,7 @@ func TestGoHandler_Execute_NoKeyspace(t *testing.T) {
 			return nil
 		},
 		"value-arg1", uint64(7531), false)
-	assert.Nil(t, err)
+	assert.Equal(t, 0, exitStatus)
 	assert.True(t, validateCalled)
 	assert.True(t, executeCalled)
 }

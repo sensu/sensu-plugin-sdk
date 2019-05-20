@@ -9,6 +9,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"os"
 	"path"
 	"strconv"
 )
@@ -35,11 +36,15 @@ type GoPlugin struct {
 	options                []*PluginConfigOption
 	sensuEvent             *types.Event
 	eventReader            io.Reader
-	pluginWorkflowFunction func(args []string) error
+	pluginWorkflowFunction func([]string) (int, error)
 	cmdArgs                *args.Args
 	readEvent              bool
 	eventMandatory         bool
 	configurationOverrides bool
+	exitStatus             int
+	errorExitStatus        int
+	exitFunction           func(int)
+	errorLogFunction       func(format string, a ...interface{})
 }
 
 func (goPlugin *GoPlugin) readSensuEvent() error {
@@ -69,6 +74,10 @@ func (goPlugin *GoPlugin) readSensuEvent() error {
 
 func (goPlugin *GoPlugin) initPlugin() {
 	goPlugin.cmdArgs = args.NewArgs(goPlugin.config.Name, goPlugin.config.Short, goPlugin.cobraExecuteFunction)
+	goPlugin.exitFunction = os.Exit
+	goPlugin.errorLogFunction = func(format string, a ...interface{}) {
+		_, _ = fmt.Fprintf(os.Stderr, format, a)
+	}
 }
 
 func (goPlugin *GoPlugin) setupArguments() error {
@@ -103,6 +112,7 @@ func (goPlugin *GoPlugin) cobraExecuteFunction(args []string) error {
 	if goPlugin.readEvent {
 		err := goPlugin.readSensuEvent()
 		if err != nil {
+			goPlugin.exitStatus = goPlugin.errorExitStatus
 			return err
 		}
 	}
@@ -111,26 +121,40 @@ func (goPlugin *GoPlugin) cobraExecuteFunction(args []string) error {
 	if goPlugin.sensuEvent != nil && goPlugin.configurationOverrides {
 		err := configurationOverrides(goPlugin.config, goPlugin.options, goPlugin.sensuEvent)
 		if err != nil {
+			goPlugin.exitStatus = goPlugin.errorExitStatus
 			return err
 		}
 	}
 
-	return goPlugin.pluginWorkflowFunction(args)
+	exitStatus, err := goPlugin.pluginWorkflowFunction(args)
+	if err != nil {
+		fmt.Printf("Error executing plugin: %s", err)
+	}
+	goPlugin.exitStatus = exitStatus
+
+	return err
 }
 
-func (goPlugin *GoPlugin) Execute() error {
+func (goPlugin *GoPlugin) Execute() {
 	// Validate the arguments are set
 	if goPlugin.cmdArgs == nil {
-		return fmt.Errorf("Arguments must be initialized")
+		goPlugin.errorLogFunction("Error executing %s: Arguments must be initialized\n", goPlugin.config.Name)
+		goPlugin.exitFunction(goPlugin.errorExitStatus)
 	}
 
 	err := goPlugin.setupArguments()
 	if err != nil {
-		return err
+		goPlugin.errorLogFunction("Error executing %s: %s\n", goPlugin.config.Name, err)
+		goPlugin.exitFunction(goPlugin.errorExitStatus)
 	}
 
 	// This will call the pluginWorkflowFunction function which implements the custom logic for that type of plugin.
-	return goPlugin.cmdArgs.Execute()
+	err = goPlugin.cmdArgs.Execute()
+	if err != nil {
+		goPlugin.errorLogFunction("Error executing %s: %v\n", goPlugin.config.Name, err)
+	}
+
+	goPlugin.exitFunction(goPlugin.exitStatus)
 }
 
 func validateEvent(event *types.Event) error {

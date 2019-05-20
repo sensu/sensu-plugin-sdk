@@ -58,13 +58,12 @@ var (
 func TestNewGoMutator(t *testing.T) {
 	values := &mutatorValues{}
 	options := getMutatorVales(values)
-	goMutator, err := NewGoMutator(&defaultMutatorConfig, options, func(event *types.Event) error {
+	goMutator := NewGoMutator(&defaultMutatorConfig, options, func(event *types.Event) error {
 		return nil
 	}, func(event *types.Event) (*types.Event, error) {
 		return nil, nil
 	})
 
-	assert.Nil(t, err)
 	assert.NotNil(t, goMutator)
 	assert.NotNil(t, goMutator.options)
 	assert.Equal(t, options, goMutator.options)
@@ -82,30 +81,31 @@ func TestNewGoMutator_NoOptionValue(t *testing.T) {
 	options := getMutatorVales(nil)
 	mutatorConfig := defaultMutatorConfig
 
-	goMutator, err := NewGoMutator(&mutatorConfig, options,
+	goMutator := NewGoMutator(&mutatorConfig, options,
 		func(event *types.Event) error {
 			return nil
 		}, func(event *types.Event) (*types.Event, error) {
 			return nil, nil
 		})
 
-	assert.Nil(t, err)
 	assert.NotNil(t, goMutator)
 
-	err = goMutator.Execute()
-	assert.NotNil(t, err)
+	var exitStatus = -99
+	goMutator.exitFunction = func(i int) {
+		exitStatus = i
+	}
+	goMutator.Execute()
+
+	assert.Equal(t, 1, exitStatus)
 }
 
 func goMutatorExecuteUtil(t *testing.T, mutatorConfig *PluginConfig, eventFile string, cmdLineArgs []string,
 	validationFunction func(*types.Event) error, executeFunction func(*types.Event) (*types.Event, error),
-	expectedValue1 interface{}, expectedValue2 interface{}, expectedValue3 interface{}, writer io.Writer) error {
+	expectedValue1 interface{}, expectedValue2 interface{}, expectedValue3 interface{}, writer io.Writer) (int, string) {
 	values := mutatorValues{}
 	options := getMutatorVales(&values)
 
-	goMutator, err := NewGoMutator(mutatorConfig, options, validationFunction, executeFunction)
-	if err != nil {
-		return err
-	}
+	goMutator := NewGoMutator(mutatorConfig, options, validationFunction, executeFunction)
 	if writer != nil {
 		goMutator.out = writer
 	}
@@ -117,14 +117,22 @@ func goMutatorExecuteUtil(t *testing.T, mutatorConfig *PluginConfig, eventFile s
 	}
 
 	// Replace stdin reader with file reader
+	var exitStatus = -99
+	var errorStr = ""
 	goMutator.eventReader = getFileReader(eventFile)
-	err = goMutator.Execute()
+	goMutator.exitFunction = func(i int) {
+		exitStatus = i
+	}
+	goMutator.errorLogFunction = func(format string, a ...interface{}) {
+		errorStr = fmt.Sprintf(format, a...)
+	}
+	goMutator.Execute()
 
 	assert.Equal(t, expectedValue1, values.arg1)
 	assert.Equal(t, expectedValue2, values.arg2)
 	assert.Equal(t, expectedValue3, values.arg3)
 
-	return err
+	return exitStatus, errorStr
 }
 
 // Test check override
@@ -133,7 +141,7 @@ func TestGoMutator_Execute_Check(t *testing.T) {
 	const newName = "Modified Name"
 	clearEnvironment()
 	var writer io.Writer = new(bytes.Buffer)
-	err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-check-override.json", nil,
+	exitStatus, err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-check-override.json", nil,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -146,7 +154,8 @@ func TestGoMutator_Execute_Check(t *testing.T) {
 			return &resultEvent, nil
 		},
 		"value-check1", uint64(1357), false, writer)
-	assert.Nil(t, err)
+	assert.Equal(t, "", err)
+	assert.Equal(t, 0, exitStatus)
 	assert.True(t, validateCalled)
 	assert.True(t, executeCalled)
 
@@ -159,10 +168,9 @@ func TestGoMutator_Execute_Check(t *testing.T) {
 // Test check override
 func TestGoMutator_Execute_Check_NilEvent(t *testing.T) {
 	var validateCalled, executeCalled bool
-	const newName = "Modified Name"
 	clearEnvironment()
 	var writer io.Writer = new(bytes.Buffer)
-	err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-check-override.json", nil,
+	exitStatus, err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-check-override.json", nil,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -173,7 +181,8 @@ func TestGoMutator_Execute_Check_NilEvent(t *testing.T) {
 			return nil, nil
 		},
 		"value-check1", uint64(1357), false, writer)
-	assert.Nil(t, err)
+	assert.Equal(t, "", err)
+	assert.Equal(t, 0, exitStatus)
 	assert.True(t, validateCalled)
 	assert.True(t, executeCalled)
 
@@ -186,7 +195,7 @@ func TestGoMutator_Execute_Check_NilEvent(t *testing.T) {
 func TestGoMutator_Execute_CheckInvalidValue(t *testing.T) {
 	var validateCalled, executeCalled bool
 	clearEnvironment()
-	err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-check-override-invalid-value.json", nil,
+	exitStatus, err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-check-override-invalid-value.json", nil,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -197,7 +206,8 @@ func TestGoMutator_Execute_CheckInvalidValue(t *testing.T) {
 			return nil, nil
 		},
 		"value-check1", uint64(33333), false, nil)
-	assert.NotNil(t, err)
+	assert.NotEqual(t, "", err)
+	assert.Equal(t, 1, exitStatus)
 	assert.False(t, validateCalled)
 	assert.False(t, executeCalled)
 }
@@ -206,7 +216,7 @@ func TestGoMutator_Execute_CheckInvalidValue(t *testing.T) {
 func TestGoMutator_Execute_Entity(t *testing.T) {
 	var validateCalled, executeCalled bool
 	clearEnvironment()
-	err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-entity-override.json", nil,
+	exitStatus, err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-entity-override.json", nil,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -218,7 +228,8 @@ func TestGoMutator_Execute_Entity(t *testing.T) {
 		},
 		"value-entity1", uint64(2468), true, nil)
 
-	assert.Nil(t, err)
+	assert.Equal(t, "", err)
+	assert.Equal(t, 0, exitStatus)
 	assert.True(t, validateCalled)
 	assert.True(t, executeCalled)
 }
@@ -227,7 +238,7 @@ func TestGoMutator_Execute_Entity(t *testing.T) {
 func TestGoMutator_Execute_EntityInvalidValue(t *testing.T) {
 	var validateCalled, executeCalled bool
 	clearEnvironment()
-	err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-entity-override-invalid-value.json", nil,
+	exitStatus, err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-entity-override-invalid-value.json", nil,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -239,7 +250,8 @@ func TestGoMutator_Execute_EntityInvalidValue(t *testing.T) {
 		},
 		"value-entity1", uint64(33333), false, nil)
 
-	assert.NotNil(t, err)
+	assert.NotEqual(t, "", err)
+	assert.Equal(t, 1, exitStatus)
 	assert.False(t, validateCalled)
 	assert.False(t, executeCalled)
 }
@@ -251,7 +263,7 @@ func TestGoMutator_Execute_Environment(t *testing.T) {
 	_ = os.Setenv("ENV_1", "value-env1")
 	_ = os.Setenv("ENV_2", "9753")
 	_ = os.Setenv("ENV_3", "true")
-	err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-no-override.json", nil,
+	exitStatus, err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-no-override.json", nil,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -262,7 +274,8 @@ func TestGoMutator_Execute_Environment(t *testing.T) {
 			return nil, nil
 		},
 		"value-env1", uint64(9753), true, nil)
-	assert.Nil(t, err)
+	assert.Equal(t, "", err)
+	assert.Equal(t, 0, exitStatus)
 	assert.True(t, validateCalled)
 	assert.True(t, executeCalled)
 }
@@ -271,7 +284,7 @@ func TestGoMutator_Execute_Environment(t *testing.T) {
 func TestGoMutator_Execute_CmdLineArgs(t *testing.T) {
 	var validateCalled, executeCalled bool
 	clearEnvironment()
-	err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-no-override.json", mutatorCmdLineArgs,
+	exitStatus, err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-no-override.json", mutatorCmdLineArgs,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -282,7 +295,8 @@ func TestGoMutator_Execute_CmdLineArgs(t *testing.T) {
 			return nil, nil
 		},
 		"value-arg1", uint64(7531), false, nil)
-	assert.Nil(t, err)
+	assert.Equal(t, "", err)
+	assert.Equal(t, 0, exitStatus)
 	assert.True(t, validateCalled)
 	assert.True(t, executeCalled)
 }
@@ -294,7 +308,7 @@ func TestGoMutator_Execute_PriorityCheck(t *testing.T) {
 	_ = os.Setenv("ENV_1", "value-env1")
 	_ = os.Setenv("ENV_2", "9753")
 	_ = os.Setenv("ENV_3", "true")
-	err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-check-entity-override.json", mutatorCmdLineArgs,
+	exitStatus, err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-check-entity-override.json", mutatorCmdLineArgs,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -305,7 +319,8 @@ func TestGoMutator_Execute_PriorityCheck(t *testing.T) {
 			return nil, nil
 		},
 		"value-check1", uint64(1357), false, nil)
-	assert.Nil(t, err)
+	assert.Equal(t, "", err)
+	assert.Equal(t, 0, exitStatus)
 	assert.True(t, validateCalled)
 	assert.True(t, executeCalled)
 }
@@ -317,7 +332,7 @@ func TestGoMutator_Execute_PriorityEntity(t *testing.T) {
 	_ = os.Setenv("ENV_1", "value-env1")
 	_ = os.Setenv("ENV_2", "9753")
 	_ = os.Setenv("ENV_3", "true")
-	err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-entity-override.json", mutatorCmdLineArgs,
+	exitStatus, err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-entity-override.json", mutatorCmdLineArgs,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -328,7 +343,8 @@ func TestGoMutator_Execute_PriorityEntity(t *testing.T) {
 			return nil, nil
 		},
 		"value-entity1", uint64(2468), true, nil)
-	assert.Nil(t, err)
+	assert.Equal(t, "", err)
+	assert.Equal(t, 0, exitStatus)
 	assert.True(t, validateCalled)
 	assert.True(t, executeCalled)
 }
@@ -340,7 +356,7 @@ func TestGoMutator_Execute_PriorityCmdLine(t *testing.T) {
 	_ = os.Setenv("ENV_1", "value-env1")
 	_ = os.Setenv("ENV_2", "9753")
 	_ = os.Setenv("ENV_3", "true")
-	err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-no-override.json", mutatorCmdLineArgs,
+	exitStatus, err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-no-override.json", mutatorCmdLineArgs,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -351,7 +367,8 @@ func TestGoMutator_Execute_PriorityCmdLine(t *testing.T) {
 			return nil, nil
 		},
 		"value-arg1", uint64(7531), false, nil)
-	assert.Nil(t, err)
+	assert.Equal(t, "", err)
+	assert.Equal(t, 0, exitStatus)
 	assert.True(t, validateCalled)
 	assert.True(t, executeCalled)
 }
@@ -360,7 +377,7 @@ func TestGoMutator_Execute_PriorityCmdLine(t *testing.T) {
 func TestGoMutator_Execute_ValidationError(t *testing.T) {
 	var validateCalled, executeCalled bool
 	clearEnvironment()
-	err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-no-override.json", mutatorCmdLineArgs,
+	exitStatus, err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-no-override.json", mutatorCmdLineArgs,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -370,8 +387,8 @@ func TestGoMutator_Execute_ValidationError(t *testing.T) {
 			return nil, nil
 		},
 		"value-arg1", uint64(7531), false, nil)
-	assert.NotNil(t, err)
-	assert.EqualError(t, err, "error validating input: validation error")
+	assert.Equal(t, 1, exitStatus)
+	assert.Contains(t, err, "error validating input: validation error")
 	assert.True(t, validateCalled)
 	assert.False(t, executeCalled)
 }
@@ -380,7 +397,7 @@ func TestGoMutator_Execute_ValidationError(t *testing.T) {
 func TestGoMutator_Execute_ExecuteError(t *testing.T) {
 	var validateCalled, executeCalled bool
 	clearEnvironment()
-	err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-no-override.json", mutatorCmdLineArgs,
+	exitStatus, err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-no-override.json", mutatorCmdLineArgs,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -391,8 +408,8 @@ func TestGoMutator_Execute_ExecuteError(t *testing.T) {
 			return nil, fmt.Errorf("execution error")
 		},
 		"value-arg1", uint64(7531), false, nil)
-	assert.NotNil(t, err)
-	assert.EqualError(t, err, "error executing mutator: execution error")
+	assert.Equal(t, 1, exitStatus)
+	assert.Contains(t, err, "error executing mutator: execution error")
 	assert.True(t, validateCalled)
 	assert.True(t, executeCalled)
 }
@@ -401,7 +418,7 @@ func TestGoMutator_Execute_ExecuteError(t *testing.T) {
 func TestGoMutator_Execute_EventNoTimestamp(t *testing.T) {
 	var validateCalled, executeCalled bool
 	clearEnvironment()
-	err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-no-timestamp.json", mutatorCmdLineArgs,
+	exitStatus, err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-no-timestamp.json", mutatorCmdLineArgs,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -412,8 +429,8 @@ func TestGoMutator_Execute_EventNoTimestamp(t *testing.T) {
 			return nil, nil
 		},
 		"value-arg1", uint64(7531), false, nil)
-	assert.NotNil(t, err)
-	assert.EqualError(t, err, "timestamp is missing or must be greater than zero")
+	assert.Equal(t, 1, exitStatus)
+	assert.Contains(t, err, "timestamp is missing or must be greater than zero")
 	assert.False(t, validateCalled)
 	assert.False(t, executeCalled)
 }
@@ -422,7 +439,7 @@ func TestGoMutator_Execute_EventNoTimestamp(t *testing.T) {
 func TestGoMutator_Execute_EventTimestampZero(t *testing.T) {
 	var validateCalled, executeCalled bool
 	clearEnvironment()
-	err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-timestamp-zero.json", mutatorCmdLineArgs,
+	exitStatus, err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-timestamp-zero.json", mutatorCmdLineArgs,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -433,8 +450,8 @@ func TestGoMutator_Execute_EventTimestampZero(t *testing.T) {
 			return nil, nil
 		},
 		"value-arg1", uint64(7531), false, nil)
-	assert.NotNil(t, err)
-	assert.EqualError(t, err, "timestamp is missing or must be greater than zero")
+	assert.Equal(t, 1, exitStatus)
+	assert.Contains(t, err, "timestamp is missing or must be greater than zero")
 	assert.False(t, validateCalled)
 	assert.False(t, executeCalled)
 }
@@ -443,7 +460,7 @@ func TestGoMutator_Execute_EventTimestampZero(t *testing.T) {
 func TestGoMutator_Execute_EventNoEntity(t *testing.T) {
 	var validateCalled, executeCalled bool
 	clearEnvironment()
-	err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-no-entity.json", mutatorCmdLineArgs,
+	exitStatus, err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-no-entity.json", mutatorCmdLineArgs,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -454,8 +471,8 @@ func TestGoMutator_Execute_EventNoEntity(t *testing.T) {
 			return nil, nil
 		},
 		"value-arg1", uint64(7531), false, nil)
-	assert.NotNil(t, err)
-	assert.EqualError(t, err, "entity is missing from event")
+	assert.Equal(t, 1, exitStatus)
+	assert.Contains(t, err, "entity is missing from event")
 	assert.False(t, validateCalled)
 	assert.False(t, executeCalled)
 }
@@ -464,7 +481,7 @@ func TestGoMutator_Execute_EventNoEntity(t *testing.T) {
 func TestGoMutator_Execute_EventInvalidEntity(t *testing.T) {
 	var validateCalled, executeCalled bool
 	clearEnvironment()
-	err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-invalid-entity.json", mutatorCmdLineArgs,
+	exitStatus, err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-invalid-entity.json", mutatorCmdLineArgs,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -475,8 +492,8 @@ func TestGoMutator_Execute_EventInvalidEntity(t *testing.T) {
 			return nil, nil
 		},
 		"value-arg1", uint64(7531), false, nil)
-	assert.NotNil(t, err)
-	assert.EqualError(t, err, "entity name must not be empty")
+	assert.Equal(t, 1, exitStatus)
+	assert.Contains(t, err, "entity name must not be empty")
 	assert.False(t, validateCalled)
 	assert.False(t, executeCalled)
 }
@@ -485,7 +502,7 @@ func TestGoMutator_Execute_EventInvalidEntity(t *testing.T) {
 func TestGoMutator_Execute_EventNoCheck(t *testing.T) {
 	var validateCalled, executeCalled bool
 	clearEnvironment()
-	err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-no-check.json", mutatorCmdLineArgs,
+	exitStatus, err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-no-check.json", mutatorCmdLineArgs,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -496,8 +513,8 @@ func TestGoMutator_Execute_EventNoCheck(t *testing.T) {
 			return nil, nil
 		},
 		"value-arg1", uint64(7531), false, nil)
-	assert.NotNil(t, err)
-	assert.EqualError(t, err, "check is missing from event")
+	assert.Equal(t, 1, exitStatus)
+	assert.Contains(t, err, "check is missing from event")
 	assert.False(t, validateCalled)
 	assert.False(t, executeCalled)
 }
@@ -506,7 +523,7 @@ func TestGoMutator_Execute_EventNoCheck(t *testing.T) {
 func TestGoMutator_Execute_EventInvalidCheck(t *testing.T) {
 	var validateCalled, executeCalled bool
 	clearEnvironment()
-	err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-invalid-check.json", mutatorCmdLineArgs,
+	exitStatus, err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-invalid-check.json", mutatorCmdLineArgs,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -517,8 +534,8 @@ func TestGoMutator_Execute_EventInvalidCheck(t *testing.T) {
 			return nil, nil
 		},
 		"value-arg1", uint64(7531), false, nil)
-	assert.NotNil(t, err)
-	assert.EqualError(t, err, "check name must not be empty")
+	assert.Equal(t, 1, exitStatus)
+	assert.Contains(t, err, "check name must not be empty")
 	assert.False(t, validateCalled)
 	assert.False(t, executeCalled)
 }
@@ -527,7 +544,7 @@ func TestGoMutator_Execute_EventInvalidCheck(t *testing.T) {
 func TestGoMutator_Execute_EventInvalidJson(t *testing.T) {
 	var validateCalled, executeCalled bool
 	clearEnvironment()
-	err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-invalid-json.json", mutatorCmdLineArgs,
+	exitStatus, err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-invalid-json.json", mutatorCmdLineArgs,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -538,8 +555,8 @@ func TestGoMutator_Execute_EventInvalidJson(t *testing.T) {
 			return nil, nil
 		},
 		"value-arg1", uint64(7531), false, nil)
-	assert.NotNil(t, err)
-	assert.EqualError(t, err, "Failed to unmarshal STDIN data: invalid character ':' after object key:value pair")
+	assert.Equal(t, 1, exitStatus)
+	assert.Contains(t, err, "Failed to unmarshal STDIN data: invalid character ':' after object key:value pair")
 	assert.False(t, validateCalled)
 	assert.False(t, executeCalled)
 }
@@ -548,7 +565,7 @@ func TestGoMutator_Execute_EventInvalidJson(t *testing.T) {
 func TestGoMutator_Execute_ReaderError(t *testing.T) {
 	var validateCalled, executeCalled bool
 	clearEnvironment()
-	err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-invalid-json.json", mutatorCmdLineArgs,
+	exitStatus, err := goMutatorExecuteUtil(t, &defaultMutatorConfig, "test/event-invalid-json.json", mutatorCmdLineArgs,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -559,8 +576,8 @@ func TestGoMutator_Execute_ReaderError(t *testing.T) {
 			return nil, nil
 		},
 		"value-arg1", uint64(7531), false, nil)
-	assert.NotNil(t, err)
-	assert.EqualError(t, err, "Failed to unmarshal STDIN data: invalid character ':' after object key:value pair")
+	assert.Equal(t, 1, exitStatus)
+	assert.Contains(t, err, "Failed to unmarshal STDIN data: invalid character ':' after object key:value pair")
 	assert.False(t, validateCalled)
 	assert.False(t, executeCalled)
 }
@@ -571,7 +588,7 @@ func TestGoMutator_Execute_NoKeyspace(t *testing.T) {
 	clearEnvironment()
 	mutatorConfig := defaultMutatorConfig
 	mutatorConfig.Keyspace = ""
-	err := goMutatorExecuteUtil(t, &mutatorConfig, "test/event-check-entity-override.json", mutatorCmdLineArgs,
+	exitStatus, err := goMutatorExecuteUtil(t, &mutatorConfig, "test/event-check-entity-override.json", mutatorCmdLineArgs,
 		func(event *types.Event) error {
 			validateCalled = true
 			assert.NotNil(t, event)
@@ -582,7 +599,8 @@ func TestGoMutator_Execute_NoKeyspace(t *testing.T) {
 			return nil, nil
 		},
 		"value-arg1", uint64(7531), false, nil)
-	assert.Nil(t, err)
+	assert.Equal(t, 0, exitStatus)
+	assert.Equal(t, "", err)
 	assert.True(t, validateCalled)
 	assert.True(t, executeCalled)
 }
