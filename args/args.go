@@ -80,6 +80,101 @@ func (args *Args) Uint64VarP(p *uint64, name, shorthand string, envKey string, d
 	args.cmd.Flags().Uint64VarP(p, name, shorthand, envValue, usage)
 }
 
+// Uint32VarP reads a uint32 argument from the command line arguments or the
+// program's environment. defaultValue is used if none is present or an invalid
+// value is present in the environment.
+func (args *Args) Uint32VarP(p *uint32, name, shorthand string, envKey string, defaultValue uint32, usage string) {
+	var envValue uint32
+	envStrValue, ok := os.LookupEnv(envKey)
+	if !ok {
+		envValue = defaultValue
+	} else {
+		parsedValue, err := strconv.ParseUint(envStrValue, 10, 32)
+		if err == nil {
+			envValue = uint32(parsedValue)
+		} else {
+			envValue = defaultValue
+		}
+	}
+	args.cmd.Flags().Uint32VarP(p, name, shorthand, envValue, usage)
+}
+
+// Uint16VarP reads a uint16 argument from the command line arguments or the
+// program's environment. defaultValue is used if none is present or an invalid
+// value is present in the environment.
+func (args *Args) Uint16VarP(p *uint16, name, shorthand string, envKey string, defaultValue uint16, usage string) {
+	var envValue uint16
+	envStrValue, ok := os.LookupEnv(envKey)
+	if !ok {
+		envValue = defaultValue
+	} else {
+		parsedValue, err := strconv.ParseUint(envStrValue, 10, 16)
+		if err == nil {
+			envValue = uint16(parsedValue)
+		} else {
+			envValue = defaultValue
+		}
+	}
+	args.cmd.Flags().Uint16VarP(p, name, shorthand, envValue, usage)
+}
+
+// Int64VarP reads a int64 argument from the command line arguments or the
+// program's environment. defaultValue is used if none is present or an invalid
+// value is present in the environment.
+func (args *Args) Int64VarP(p *int64, name, shorthand string, envKey string, defaultValue int64, usage string) {
+	var envValue int64
+	envStrValue, ok := os.LookupEnv(envKey)
+	if !ok {
+		envValue = defaultValue
+	} else {
+		parsedValue, err := strconv.ParseInt(envStrValue, 10, 64)
+		if err == nil {
+			envValue = parsedValue
+		} else {
+			envValue = defaultValue
+		}
+	}
+	args.cmd.Flags().Int64VarP(p, name, shorthand, envValue, usage)
+}
+
+// Int32VarP reads a int32 argument from the command line arguments or the
+// program's environment. defaultValue is used if none is present or an invalid
+// value is present in the environment.
+func (args *Args) Int32VarP(p *int32, name, shorthand string, envKey string, defaultValue int32, usage string) {
+	var envValue int32
+	envStrValue, ok := os.LookupEnv(envKey)
+	if !ok {
+		envValue = defaultValue
+	} else {
+		parsedValue, err := strconv.ParseInt(envStrValue, 10, 32)
+		if err == nil {
+			envValue = int32(parsedValue)
+		} else {
+			envValue = defaultValue
+		}
+	}
+	args.cmd.Flags().Int32VarP(p, name, shorthand, envValue, usage)
+}
+
+// Int16VarP reads a int16 argument from the command line arguments or the
+// program's environment. defaultValue is used if none is present or an invalid
+// value is present in the environment.
+func (args *Args) Int16VarP(p *int16, name, shorthand string, envKey string, defaultValue int16, usage string) {
+	var envValue int16
+	envStrValue, ok := os.LookupEnv(envKey)
+	if !ok {
+		envValue = defaultValue
+	} else {
+		parsedValue, err := strconv.ParseInt(envStrValue, 10, 16)
+		if err == nil {
+			envValue = int16(parsedValue)
+		} else {
+			envValue = defaultValue
+		}
+	}
+	args.cmd.Flags().Int16VarP(p, name, shorthand, envValue, usage)
+}
+
 // BoolVarP reads a uint64 argument from the command line arguments or the
 // program's environment. defaultValue is used if none is present or an invalid
 // value is present in the environment.

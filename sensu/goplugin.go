@@ -95,6 +95,26 @@ func (goPlugin *GoPlugin) setupArguments() error {
 			valuePtr, _ := option.Value.(*uint64)
 			goPlugin.cmdArgs.Uint64VarP(valuePtr, option.Argument, option.Shorthand, option.Env,
 				option.Default.(uint64), option.Usage)
+		case *uint32:
+			valuePtr, _ := option.Value.(*uint32)
+			goPlugin.cmdArgs.Uint32VarP(valuePtr, option.Argument, option.Shorthand, option.Env,
+				option.Default.(uint32), option.Usage)
+		case *uint16:
+			valuePtr, _ := option.Value.(*uint16)
+			goPlugin.cmdArgs.Uint16VarP(valuePtr, option.Argument, option.Shorthand, option.Env,
+				option.Default.(uint16), option.Usage)
+		case *int64:
+			valuePtr, _ := option.Value.(*int64)
+			goPlugin.cmdArgs.Int64VarP(valuePtr, option.Argument, option.Shorthand, option.Env,
+				option.Default.(int64), option.Usage)
+		case *int32:
+			valuePtr, _ := option.Value.(*int32)
+			goPlugin.cmdArgs.Int32VarP(valuePtr, option.Argument, option.Shorthand, option.Env,
+				option.Default.(int32), option.Usage)
+		case *int16:
+			valuePtr, _ := option.Value.(*int16)
+			goPlugin.cmdArgs.Int16VarP(valuePtr, option.Argument, option.Shorthand, option.Env,
+				option.Default.(int16), option.Usage)
 		case *bool:
 			valuePtr, _ := option.Value.(*bool)
 			goPlugin.cmdArgs.BoolVarP(valuePtr, option.Argument, option.Shorthand, option.Env,
@@ -196,6 +216,51 @@ func setOptionValue(option *PluginConfigOption, valueStr string) error {
 				return fmt.Errorf("Error parsing %s into a uint64 for option %s", valueStr, option.Argument)
 			}
 			*uint64OptionPtrValue = parsedValue
+		}
+	case *uint32:
+		uint32OptionPtrValue, ok := option.Value.(*uint32)
+		if ok {
+			parsedValue, err := strconv.ParseUint(valueStr, 10, 32)
+			if err != nil {
+				return fmt.Errorf("Error parsing %s into a uint32 for option %s", valueStr, option.Argument)
+			}
+			*uint32OptionPtrValue = uint32(parsedValue)
+		}
+	case *uint16:
+		uint16OptionPtrValue, ok := option.Value.(*uint16)
+		if ok {
+			parsedValue, err := strconv.ParseUint(valueStr, 10, 16)
+			if err != nil {
+				return fmt.Errorf("Error parsing %s into a uint16 for option %s", valueStr, option.Argument)
+			}
+			*uint16OptionPtrValue = uint16(parsedValue)
+		}
+	case *int64:
+		int64OptionPtrValue, ok := option.Value.(*int64)
+		if ok {
+			parsedValue, err := strconv.ParseInt(valueStr, 10, 64)
+			if err != nil {
+				return fmt.Errorf("Error parsing %s into a int64 for option %s", valueStr, option.Argument)
+			}
+			*int64OptionPtrValue = parsedValue
+		}
+	case *int32:
+		int32OptionPtrValue, ok := option.Value.(*int32)
+		if ok {
+			parsedValue, err := strconv.ParseInt(valueStr, 10, 32)
+			if err != nil {
+				return fmt.Errorf("Error parsing %s into a uint32 for option %s", valueStr, option.Argument)
+			}
+			*int32OptionPtrValue = int32(parsedValue)
+		}
+	case *int16:
+		int16OptionPtrValue, ok := option.Value.(*int16)
+		if ok {
+			parsedValue, err := strconv.ParseUint(valueStr, 10, 16)
+			if err != nil {
+				return fmt.Errorf("Error parsing %s into a uint16 for option %s", valueStr, option.Argument)
+			}
+			*int16OptionPtrValue = int16(parsedValue)
 		}
 	case *bool:
 		boolOptionPtrValue, ok := option.Value.(*bool)

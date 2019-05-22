@@ -63,7 +63,7 @@
       "annotations": {
         "sensu.io/plugins/segp/config/path1": "value-entity1",
         "sensu.io/plugins/segp/config/path2": "not an int",
-        "sensu.io/plugins/segp/config/path3": "not a bool"
+        "sensu.io/plugins/segp/config/path8": "not a bool"
       }
     }
   },

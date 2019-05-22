@@ -22,34 +22,7 @@ var (
 		Keyspace: "sensu.io/plugins/segp/config",
 	}
 
-	defaultOption1 = PluginConfigOption{
-		Argument:  "arg1",
-		Default:   "Default1",
-		Env:       "ENV_1",
-		Path:      "path1",
-		Shorthand: "d",
-		Usage:     "First argument",
-	}
-
-	defaultOption2 = PluginConfigOption{
-		Argument:  "arg2",
-		Default:   uint64(33333),
-		Env:       "ENV_2",
-		Path:      "path2",
-		Shorthand: "e",
-		Usage:     "Second argument",
-	}
-
-	defaultOption3 = PluginConfigOption{
-		Argument:  "arg3",
-		Default:   false,
-		Env:       "ENV_3",
-		Path:      "path3",
-		Shorthand: "f",
-		Usage:     "Third argument",
-	}
-
-	defaultCmdLineArgs = []string{"--arg1", "value-arg1", "--arg2", "7531", "--arg3=false"}
+	defaultCmdLineArgs = []string{"--arg1", "value-arg1", "--arg2", "7531", "--arg8=false"}
 )
 
 func TestNewGoHandler(t *testing.T) {
@@ -161,7 +134,7 @@ func TestGoHandler_Execute_CheckInvalidValue(t *testing.T) {
 			assert.NotNil(t, event)
 			return nil
 		},
-		"value-check1", uint64(33333), false)
+		"value-check1", uint64(22222), false)
 	assert.Equal(t, 1, exitStatus)
 	assert.False(t, validateCalled)
 	assert.False(t, executeCalled)
@@ -202,7 +175,7 @@ func TestGoHandler_Execute_EntityInvalidValue(t *testing.T) {
 			assert.NotNil(t, event)
 			return nil
 		},
-		"value-entity1", uint64(33333), false)
+		"value-entity1", uint64(22222), false)
 
 	assert.Equal(t, 1, exitStatus)
 	assert.False(t, validateCalled)
@@ -215,7 +188,7 @@ func TestGoHandler_Execute_Environment(t *testing.T) {
 	clearEnvironment()
 	_ = os.Setenv("ENV_1", "value-env1")
 	_ = os.Setenv("ENV_2", "9753")
-	_ = os.Setenv("ENV_3", "true")
+	_ = os.Setenv("ENV_8", "true")
 	exitStatus, _ := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-no-override.json", nil,
 		func(event *types.Event) error {
 			validateCalled = true
@@ -281,7 +254,7 @@ func TestGoHandler_Execute_PriorityEntity(t *testing.T) {
 	clearEnvironment()
 	_ = os.Setenv("ENV_1", "value-env1")
 	_ = os.Setenv("ENV_2", "9753")
-	_ = os.Setenv("ENV_3", "true")
+	_ = os.Setenv("ENV_8", "true")
 	exitStatus, _ := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-entity-override.json", defaultCmdLineArgs,
 		func(event *types.Event) error {
 			validateCalled = true
@@ -555,7 +528,7 @@ func TestGoHandler_Execute_NoKeyspace(t *testing.T) {
 func getHandlerOptions(values *handlerValues) []*PluginConfigOption {
 	option1 := defaultOption1
 	option2 := defaultOption2
-	option3 := defaultOption3
+	option3 := defaultOption8
 	if values != nil {
 		option1.Value = &values.arg1
 		option2.Value = &values.arg2
