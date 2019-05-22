@@ -215,7 +215,7 @@ func configurationOverrides(config *PluginConfig, options []*PluginConfigOption,
 				if err != nil {
 					return err
 				}
-				log.Printf("Overriding default handler configuration with value of \"Check.Annotations.%s\" (\"%s\")\n",
+				log.Printf("Overriding default handler configuration with value of \"Entity.Annotations.%s\" (\"%s\")\n",
 					key, event.Entity.Annotations[key])
 			}
 		}
