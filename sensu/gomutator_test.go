@@ -472,7 +472,7 @@ func TestGoMutator_Execute_EventNoEntity(t *testing.T) {
 		},
 		"value-arg1", uint64(7531), false, nil)
 	assert.Equal(t, 1, exitStatus)
-	assert.Contains(t, err, "entity is missing from event")
+	assert.Contains(t, err, "event must contain an entity")
 	assert.False(t, validateCalled)
 	assert.False(t, executeCalled)
 }
@@ -514,7 +514,7 @@ func TestGoMutator_Execute_EventNoCheck(t *testing.T) {
 		},
 		"value-arg1", uint64(7531), false, nil)
 	assert.Equal(t, 1, exitStatus)
-	assert.Contains(t, err, "check is missing from event")
+	assert.Contains(t, err, "event must contain a check or metrics")
 	assert.False(t, validateCalled)
 	assert.False(t, executeCalled)
 }

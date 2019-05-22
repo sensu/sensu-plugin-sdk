@@ -162,23 +162,7 @@ func validateEvent(event *types.Event) error {
 		return errors.New("timestamp is missing or must be greater than zero")
 	}
 
-	if event.Entity == nil {
-		return errors.New("entity is missing from event")
-	}
-
-	if !event.HasCheck() {
-		return errors.New("check is missing from event")
-	}
-
-	if err := event.Entity.Validate(); err != nil {
-		return err
-	}
-
-	if err := event.Check.Validate(); err != nil {
-		return err
-	}
-
-	return nil
+	return event.Validate()
 }
 
 func setOptionValue(option *PluginConfigOption, valueStr string) error {

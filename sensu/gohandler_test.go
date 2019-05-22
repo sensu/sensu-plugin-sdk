@@ -420,7 +420,7 @@ func TestGoHandler_Execute_EventNoEntity(t *testing.T) {
 		},
 		"value-arg1", uint64(7531), false)
 	assert.Equal(t, 1, exitStatus)
-	assert.Contains(t, errorStr, "entity is missing from event")
+	assert.Contains(t, errorStr, "event must contain an entity")
 	assert.False(t, validateCalled)
 	assert.False(t, executeCalled)
 }
@@ -462,7 +462,7 @@ func TestGoHandler_Execute_EventNoCheck(t *testing.T) {
 		},
 		"value-arg1", uint64(7531), false)
 	assert.Equal(t, 1, exitStatus)
-	assert.Contains(t, errorStr, "check is missing from event")
+	assert.Contains(t, errorStr, "event must contain a check or metrics")
 	assert.False(t, validateCalled)
 	assert.False(t, executeCalled)
 }
