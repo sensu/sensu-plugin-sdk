@@ -61,7 +61,7 @@ func TestNewGoHandler(t *testing.T) {
 		return nil
 	})
 
-	goHandler := goPlugin.(*GoHandler)
+	goHandler := goPlugin.(*goHandler)
 
 	assert.NotNil(t, goHandler)
 	assert.NotNil(t, goHandler.options)
@@ -88,7 +88,7 @@ func TestNewGoHandler_NoOptionValue(t *testing.T) {
 
 	assert.NotNil(t, goPlugin)
 
-	goHandler := goPlugin.(*GoHandler)
+	goHandler := goPlugin.(*goHandler)
 	goHandler.exitFunction = func(i int) {
 		exitStatus = i
 	}
@@ -103,7 +103,7 @@ func goHandlerExecuteUtil(t *testing.T, handlerConfig *PluginConfig, eventFile s
 	options := getHandlerOptions(&values)
 
 	goPlugin := NewGoHandler(handlerConfig, options, validationFunction, executeFunction)
-	goHandler := goPlugin.(*GoHandler)
+	goHandler := goPlugin.(*goHandler)
 
 	// Simulate the command line arguments if necessary
 	if len(cmdLineArgs) > 0 {

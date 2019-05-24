@@ -40,8 +40,8 @@ type PluginConfig struct {
 	Keyspace string
 }
 
-// BasePlugin defines the basic configuration to be used by all plugin types.
-type BasePlugin struct {
+// basePlugin defines the basic configuration to be used by all plugin types.
+type basePlugin struct {
 	config                 *PluginConfig
 	options                []*PluginConfigOption
 	sensuEvent             *types.Event
@@ -57,7 +57,7 @@ type BasePlugin struct {
 	errorLogFunction       func(format string, a ...interface{})
 }
 
-func (goPlugin *BasePlugin) readSensuEvent() error {
+func (goPlugin *basePlugin) readSensuEvent() error {
 	eventJSON, err := ioutil.ReadAll(goPlugin.eventReader)
 	if err != nil {
 		if goPlugin.eventMandatory {
@@ -82,7 +82,7 @@ func (goPlugin *BasePlugin) readSensuEvent() error {
 	return nil
 }
 
-func (goPlugin *BasePlugin) initPlugin() {
+func (goPlugin *basePlugin) initPlugin() {
 	goPlugin.cmdArgs = args.NewArgs(goPlugin.config.Name, goPlugin.config.Short, goPlugin.cobraExecuteFunction)
 	goPlugin.exitFunction = os.Exit
 	goPlugin.errorLogFunction = func(format string, a ...interface{}) {
@@ -90,7 +90,7 @@ func (goPlugin *BasePlugin) initPlugin() {
 	}
 }
 
-func (goPlugin *BasePlugin) setupArguments() error {
+func (goPlugin *basePlugin) setupArguments() error {
 	for _, option := range goPlugin.options {
 		if option.Value == nil {
 			return fmt.Errorf("Option value must not be nil for %s", option.Argument)
@@ -117,7 +117,7 @@ func (goPlugin *BasePlugin) setupArguments() error {
 
 // cobraExecuteFunction is called by the argument's execute. The configuration overrides will be processed if necessary
 // and the pluginWorkflowFunction function executed
-func (goPlugin *BasePlugin) cobraExecuteFunction(args []string) error {
+func (goPlugin *basePlugin) cobraExecuteFunction(args []string) error {
 	// Read the Sensu event if required
 	if goPlugin.readEvent {
 		err := goPlugin.readSensuEvent()
@@ -145,7 +145,7 @@ func (goPlugin *BasePlugin) cobraExecuteFunction(args []string) error {
 	return err
 }
 
-func (goPlugin *BasePlugin) Execute() {
+func (goPlugin *basePlugin) Execute() {
 	// Validate the arguments are set
 	if goPlugin.cmdArgs == nil {
 		goPlugin.errorLogFunction("Error executing %s: Arguments must be initialized\n", goPlugin.config.Name)
