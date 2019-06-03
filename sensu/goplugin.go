@@ -14,6 +14,14 @@ import (
 	"strconv"
 )
 
+// GoPlugin defines the GoPlugin interface to be implemented by all types of plugins
+type GoPlugin interface {
+	Execute()
+}
+
+// PluginConfigOption defines an option to be read by the plugin on startup. An
+// option can be passed using a command line argument, an environment variable or
+// at for some plugin types using a configuration override from the Sensu event.
 type PluginConfigOption struct {
 	Value     interface{}
 	Path      string
@@ -24,6 +32,7 @@ type PluginConfigOption struct {
 	Usage     string
 }
 
+// PluginConfig defines the base plugin configuration.
 type PluginConfig struct {
 	Name     string
 	Short    string
@@ -31,7 +40,8 @@ type PluginConfig struct {
 	Keyspace string
 }
 
-type GoPlugin struct {
+// basePlugin defines the basic configuration to be used by all plugin types.
+type basePlugin struct {
 	config                 *PluginConfig
 	options                []*PluginConfigOption
 	sensuEvent             *types.Event
@@ -47,7 +57,7 @@ type GoPlugin struct {
 	errorLogFunction       func(format string, a ...interface{})
 }
 
-func (goPlugin *GoPlugin) readSensuEvent() error {
+func (goPlugin *basePlugin) readSensuEvent() error {
 	eventJSON, err := ioutil.ReadAll(goPlugin.eventReader)
 	if err != nil {
 		if goPlugin.eventMandatory {
@@ -72,7 +82,7 @@ func (goPlugin *GoPlugin) readSensuEvent() error {
 	return nil
 }
 
-func (goPlugin *GoPlugin) initPlugin() {
+func (goPlugin *basePlugin) initPlugin() {
 	goPlugin.cmdArgs = args.NewArgs(goPlugin.config.Name, goPlugin.config.Short, goPlugin.cobraExecuteFunction)
 	goPlugin.exitFunction = os.Exit
 	goPlugin.errorLogFunction = func(format string, a ...interface{}) {
@@ -80,7 +90,7 @@ func (goPlugin *GoPlugin) initPlugin() {
 	}
 }
 
-func (goPlugin *GoPlugin) setupArguments() error {
+func (goPlugin *basePlugin) setupArguments() error {
 	for _, option := range goPlugin.options {
 		if option.Value == nil {
 			return fmt.Errorf("Option value must not be nil for %s", option.Argument)
@@ -127,7 +137,7 @@ func (goPlugin *GoPlugin) setupArguments() error {
 
 // cobraExecuteFunction is called by the argument's execute. The configuration overrides will be processed if necessary
 // and the pluginWorkflowFunction function executed
-func (goPlugin *GoPlugin) cobraExecuteFunction(args []string) error {
+func (goPlugin *basePlugin) cobraExecuteFunction(args []string) error {
 	// Read the Sensu event if required
 	if goPlugin.readEvent {
 		err := goPlugin.readSensuEvent()
@@ -155,7 +165,7 @@ func (goPlugin *GoPlugin) cobraExecuteFunction(args []string) error {
 	return err
 }
 
-func (goPlugin *GoPlugin) Execute() {
+func (goPlugin *basePlugin) Execute() {
 	// Validate the arguments are set
 	if goPlugin.cmdArgs == nil {
 		goPlugin.errorLogFunction("Error executing %s: Arguments must be initialized\n", goPlugin.config.Name)
@@ -182,23 +192,7 @@ func validateEvent(event *types.Event) error {
 		return errors.New("timestamp is missing or must be greater than zero")
 	}
 
-	if event.Entity == nil {
-		return errors.New("entity is missing from event")
-	}
-
-	if !event.HasCheck() {
-		return errors.New("check is missing from event")
-	}
-
-	if err := event.Entity.Validate(); err != nil {
-		return err
-	}
-
-	if err := event.Check.Validate(); err != nil {
-		return err
-	}
-
-	return nil
+	return event.Validate()
 }
 
 func setOptionValue(option *PluginConfigOption, valueStr string) error {
@@ -296,7 +290,7 @@ func configurationOverrides(config *PluginConfig, options []*PluginConfigOption,
 				if err != nil {
 					return err
 				}
-				log.Printf("Overriding default handler configuration with value of \"Check.Annotations.%s\" (\"%s\")\n",
+				log.Printf("Overriding default handler configuration with value of \"Entity.Annotations.%s\" (\"%s\")\n",
 					key, event.Entity.Annotations[key])
 			}
 		}

@@ -58,11 +58,13 @@ var (
 func TestNewGoMutator(t *testing.T) {
 	values := &mutatorValues{}
 	options := getMutatorVales(values)
-	goMutator := NewGoMutator(&defaultMutatorConfig, options, func(event *types.Event) error {
+	goPlugin := NewGoMutator(&defaultMutatorConfig, options, func(event *types.Event) error {
 		return nil
 	}, func(event *types.Event) (*types.Event, error) {
 		return nil, nil
 	})
+
+	goMutator := goPlugin.(*goMutator)
 
 	assert.NotNil(t, goMutator)
 	assert.NotNil(t, goMutator.options)
@@ -81,14 +83,15 @@ func TestNewGoMutator_NoOptionValue(t *testing.T) {
 	options := getMutatorVales(nil)
 	mutatorConfig := defaultMutatorConfig
 
-	goMutator := NewGoMutator(&mutatorConfig, options,
+	goPlugin := NewGoMutator(&mutatorConfig, options,
 		func(event *types.Event) error {
 			return nil
 		}, func(event *types.Event) (*types.Event, error) {
 			return nil, nil
 		})
 
-	assert.NotNil(t, goMutator)
+	assert.NotNil(t, goPlugin)
+	goMutator := goPlugin.(*goMutator)
 
 	var exitStatus = -99
 	goMutator.exitFunction = func(i int) {
@@ -105,7 +108,8 @@ func goMutatorExecuteUtil(t *testing.T, mutatorConfig *PluginConfig, eventFile s
 	values := mutatorValues{}
 	options := getMutatorVales(&values)
 
-	goMutator := NewGoMutator(mutatorConfig, options, validationFunction, executeFunction)
+	goPlugin := NewGoMutator(mutatorConfig, options, validationFunction, executeFunction)
+	goMutator := goPlugin.(*goMutator)
 	if writer != nil {
 		goMutator.out = writer
 	}
@@ -472,7 +476,7 @@ func TestGoMutator_Execute_EventNoEntity(t *testing.T) {
 		},
 		"value-arg1", uint64(7531), false, nil)
 	assert.Equal(t, 1, exitStatus)
-	assert.Contains(t, err, "entity is missing from event")
+	assert.Contains(t, err, "event must contain an entity")
 	assert.False(t, validateCalled)
 	assert.False(t, executeCalled)
 }
@@ -514,7 +518,7 @@ func TestGoMutator_Execute_EventNoCheck(t *testing.T) {
 		},
 		"value-arg1", uint64(7531), false, nil)
 	assert.Equal(t, 1, exitStatus)
-	assert.Contains(t, err, "check is missing from event")
+	assert.Contains(t, err, "event must contain a check or metrics")
 	assert.False(t, validateCalled)
 	assert.False(t, executeCalled)
 }

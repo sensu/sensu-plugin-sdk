@@ -28,11 +28,13 @@ var (
 func TestNewGoHandler(t *testing.T) {
 	values := &handlerValues{}
 	options := getHandlerOptions(values)
-	goHandler := NewGoHandler(&defaultHandlerConfig, options, func(event *types.Event) error {
+	goPlugin := NewGoHandler(&defaultHandlerConfig, options, func(event *types.Event) error {
 		return nil
 	}, func(event *types.Event) error {
 		return nil
 	})
+
+	goHandler := goPlugin.(*goHandler)
 
 	assert.NotNil(t, goHandler)
 	assert.NotNil(t, goHandler.options)
@@ -50,15 +52,16 @@ func TestNewGoHandler_NoOptionValue(t *testing.T) {
 	options := getHandlerOptions(nil)
 	handlerConfig := defaultHandlerConfig
 
-	goHandler := NewGoHandler(&handlerConfig, options,
+	goPlugin := NewGoHandler(&handlerConfig, options,
 		func(event *types.Event) error {
 			return nil
 		}, func(event *types.Event) error {
 			return nil
 		})
 
-	assert.NotNil(t, goHandler)
+	assert.NotNil(t, goPlugin)
 
+	goHandler := goPlugin.(*goHandler)
 	goHandler.exitFunction = func(i int) {
 		exitStatus = i
 	}
@@ -72,7 +75,8 @@ func goHandlerExecuteUtil(t *testing.T, handlerConfig *PluginConfig, eventFile s
 	values := handlerValues{}
 	options := getHandlerOptions(&values)
 
-	goHandler := NewGoHandler(handlerConfig, options, validationFunction, executeFunction)
+	goPlugin := NewGoHandler(handlerConfig, options, validationFunction, executeFunction)
+	goHandler := goPlugin.(*goHandler)
 
 	// Simulate the command line arguments if necessary
 	if len(cmdLineArgs) > 0 {
@@ -393,7 +397,7 @@ func TestGoHandler_Execute_EventNoEntity(t *testing.T) {
 		},
 		"value-arg1", uint64(7531), false)
 	assert.Equal(t, 1, exitStatus)
-	assert.Contains(t, errorStr, "entity is missing from event")
+	assert.Contains(t, errorStr, "event must contain an entity")
 	assert.False(t, validateCalled)
 	assert.False(t, executeCalled)
 }
@@ -435,7 +439,7 @@ func TestGoHandler_Execute_EventNoCheck(t *testing.T) {
 		},
 		"value-arg1", uint64(7531), false)
 	assert.Equal(t, 1, exitStatus)
-	assert.Contains(t, errorStr, "check is missing from event")
+	assert.Contains(t, errorStr, "event must contain a check or metrics")
 	assert.False(t, validateCalled)
 	assert.False(t, executeCalled)
 }
