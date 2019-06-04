@@ -89,7 +89,8 @@ func TestNewGoHandler_NoOptionValue(t *testing.T) {
 
 	assert.NotNil(t, goPlugin)
 
-	goHandler := goPlugin.(*goHandler)
+	goHandler, err := goPlugin.(*goHandler)
+	assert.Nil(t, err)
 	goHandler.exitFunction = func(i int) {
 		exitStatus = i
 	}
