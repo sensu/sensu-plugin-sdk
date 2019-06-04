@@ -61,7 +61,8 @@ func TestNewGoHandler(t *testing.T) {
 		return nil
 	})
 
-	goHandler := goPlugin.(*goHandler)
+	goHandler, err := goPlugin.(*goHandler)
+	assert.Nil(t, err)
 
 	assert.NotNil(t, goHandler)
 	assert.NotNil(t, goHandler.options)
