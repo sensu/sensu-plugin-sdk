@@ -111,7 +111,8 @@ func goMutatorExecuteUtil(t *testing.T, mutatorConfig *PluginConfig, eventFile s
 	options := getMutatorVales(&values)
 
 	goPlugin := NewGoMutator(mutatorConfig, options, validationFunction, executeFunction)
-	goMutator := goPlugin.(*goMutator)
+	goMutator, ok := goPlugin.(*goMutator)
+	assert.True(t, ok)
 	if writer != nil {
 		goMutator.out = writer
 	}
