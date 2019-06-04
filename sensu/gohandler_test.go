@@ -61,8 +61,8 @@ func TestNewGoHandler(t *testing.T) {
 		return nil
 	})
 
-	goHandler, err := goPlugin.(*goHandler)
-	assert.Nil(t, err)
+	goHandler, ok := goPlugin.(*goHandler)
+	assert.True(t, ok)
 
 	assert.NotNil(t, goHandler)
 	assert.NotNil(t, goHandler.options)
@@ -89,8 +89,8 @@ func TestNewGoHandler_NoOptionValue(t *testing.T) {
 
 	assert.NotNil(t, goPlugin)
 
-	goHandler, err := goPlugin.(*goHandler)
-	assert.Nil(t, err)
+	goHandler, ok := goPlugin.(*goHandler)
+	assert.True(t, ok)
 	goHandler.exitFunction = func(i int) {
 		exitStatus = i
 	}
