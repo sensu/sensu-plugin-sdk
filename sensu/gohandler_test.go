@@ -530,9 +530,9 @@ func TestGoHandler_Execute_NoKeyspace(t *testing.T) {
 }
 
 func getHandlerOptions(values *handlerValues) []*PluginConfigOption {
-	option1 := defaultOption1
-	option2 := defaultOption2
-	option3 := defaultOption8
+	option1 := defaultOptionStr
+	option2 := defaultOptionUint64
+	option3 := defaultOptionBool
 	if values != nil {
 		option1.Value = &values.arg1
 		option2.Value = &values.arg2
