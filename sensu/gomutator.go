@@ -9,7 +9,7 @@ import (
 )
 
 type GoMutator struct {
-	GoPlugin
+	basePlugin
 	out                io.Writer
 	validationFunction func(event *types.Event) error
 	executeFunction    func(event *types.Event) (*types.Event, error)
@@ -19,7 +19,7 @@ func NewGoMutator(config *PluginConfig, options []*PluginConfigOption,
 	validationFunction func(event *types.Event) error,
 	executeFunction func(event *types.Event) (*types.Event, error)) *GoMutator {
 	goMutator := &GoMutator{
-		GoPlugin: GoPlugin{
+		basePlugin: basePlugin{
 			config:                 config,
 			options:                options,
 			sensuEvent:             nil,

@@ -7,7 +7,7 @@ import (
 )
 
 type GoHandler struct {
-	GoPlugin
+	basePlugin
 	validationFunction func(event *types.Event) error
 	executeFunction    func(event *types.Event) error
 }
@@ -15,7 +15,7 @@ type GoHandler struct {
 func NewGoHandler(config *PluginConfig, options []*PluginConfigOption,
 	validationFunction func(event *types.Event) error, executeFunction func(event *types.Event) error) *GoHandler {
 	goHandler := &GoHandler{
-		GoPlugin: GoPlugin{
+		basePlugin: basePlugin{
 			config:                 config,
 			options:                options,
 			sensuEvent:             nil,
@@ -31,6 +31,7 @@ func NewGoHandler(config *PluginConfig, options []*PluginConfigOption,
 
 	goHandler.pluginWorkflowFunction = goHandler.goHandlerWorkflow
 	goHandler.initPlugin()
+
 	return goHandler
 }
 
