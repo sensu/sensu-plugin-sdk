@@ -58,14 +58,11 @@ var (
 func TestNewGoMutator(t *testing.T) {
 	values := &mutatorValues{}
 	options := getMutatorVales(values)
-	goPlugin := NewGoMutator(&defaultMutatorConfig, options, func(event *types.Event) error {
+	goMutator := NewGoMutator(&defaultMutatorConfig, options, func(event *types.Event) error {
 		return nil
 	}, func(event *types.Event) (*types.Event, error) {
 		return nil, nil
 	})
-
-	goMutator, ok := goPlugin.(*goMutator)
-	assert.True(t, ok)
 
 	assert.NotNil(t, goMutator)
 	assert.NotNil(t, goMutator.options)
@@ -84,16 +81,14 @@ func TestNewGoMutator_NoOptionValue(t *testing.T) {
 	options := getMutatorVales(nil)
 	mutatorConfig := defaultMutatorConfig
 
-	goPlugin := NewGoMutator(&mutatorConfig, options,
+	goMutator := NewGoMutator(&mutatorConfig, options,
 		func(event *types.Event) error {
 			return nil
 		}, func(event *types.Event) (*types.Event, error) {
 			return nil, nil
 		})
 
-	assert.NotNil(t, goPlugin)
-	goMutator, ok := goPlugin.(*goMutator)
-	assert.True(t, ok)
+	assert.NotNil(t, goMutator)
 
 	var exitStatus = -99
 	goMutator.exitFunction = func(i int) {
@@ -110,9 +105,7 @@ func goMutatorExecuteUtil(t *testing.T, mutatorConfig *PluginConfig, eventFile s
 	values := mutatorValues{}
 	options := getMutatorVales(&values)
 
-	goPlugin := NewGoMutator(mutatorConfig, options, validationFunction, executeFunction)
-	goMutator, ok := goPlugin.(*goMutator)
-	assert.True(t, ok)
+	goMutator := NewGoMutator(mutatorConfig, options, validationFunction, executeFunction)
 	if writer != nil {
 		goMutator.out = writer
 	}

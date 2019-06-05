@@ -8,7 +8,7 @@ import (
 	"os"
 )
 
-type goMutator struct {
+type GoMutator struct {
 	basePlugin
 	out                io.Writer
 	validationFunction func(event *types.Event) error
@@ -17,8 +17,8 @@ type goMutator struct {
 
 func NewGoMutator(config *PluginConfig, options []*PluginConfigOption,
 	validationFunction func(event *types.Event) error,
-	executeFunction func(event *types.Event) (*types.Event, error)) GoPlugin {
-	goMutator := &goMutator{
+	executeFunction func(event *types.Event) (*types.Event, error)) *GoMutator {
+	goMutator := &GoMutator{
 		basePlugin: basePlugin{
 			config:                 config,
 			options:                options,
@@ -40,7 +40,7 @@ func NewGoMutator(config *PluginConfig, options []*PluginConfigOption,
 }
 
 // Executes the handler's workflow
-func (goMutator *goMutator) goMutatorWorkflow(_ []string) (int, error) {
+func (goMutator *GoMutator) goMutatorWorkflow(_ []string) (int, error) {
 	// Validate input using validateFunction
 	err := goMutator.validationFunction(goMutator.sensuEvent)
 	if err != nil {

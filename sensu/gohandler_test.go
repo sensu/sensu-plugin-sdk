@@ -55,14 +55,11 @@ var (
 func TestNewGoHandler(t *testing.T) {
 	values := &handlerValues{}
 	options := getHandlerOptions(values)
-	goPlugin := NewGoHandler(&defaultHandlerConfig, options, func(event *types.Event) error {
+	goHandler := NewGoHandler(&defaultHandlerConfig, options, func(event *types.Event) error {
 		return nil
 	}, func(event *types.Event) error {
 		return nil
 	})
-
-	goHandler, ok := goPlugin.(*goHandler)
-	assert.True(t, ok)
 
 	assert.NotNil(t, goHandler)
 	assert.NotNil(t, goHandler.options)
@@ -80,17 +77,13 @@ func TestNewGoHandler_NoOptionValue(t *testing.T) {
 	options := getHandlerOptions(nil)
 	handlerConfig := defaultHandlerConfig
 
-	goPlugin := NewGoHandler(&handlerConfig, options,
+	goHandler := NewGoHandler(&handlerConfig, options,
 		func(event *types.Event) error {
 			return nil
 		}, func(event *types.Event) error {
 			return nil
 		})
 
-	assert.NotNil(t, goPlugin)
-
-	goHandler, ok := goPlugin.(*goHandler)
-	assert.True(t, ok)
 	goHandler.exitFunction = func(i int) {
 		exitStatus = i
 	}
@@ -104,8 +97,7 @@ func goHandlerExecuteUtil(t *testing.T, handlerConfig *PluginConfig, eventFile s
 	values := handlerValues{}
 	options := getHandlerOptions(&values)
 
-	goPlugin := NewGoHandler(handlerConfig, options, validationFunction, executeFunction)
-	goHandler := goPlugin.(*goHandler)
+	goHandler := NewGoHandler(handlerConfig, options, validationFunction, executeFunction)
 
 	// Simulate the command line arguments if necessary
 	if len(cmdLineArgs) > 0 {
