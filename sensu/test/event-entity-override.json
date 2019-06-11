@@ -61,9 +61,14 @@
       "namespace": "default",
       "labels": null,
       "annotations": {
-        "sensu.io/plugins/segp/config/path1": "value-entity1",
-        "sensu.io/plugins/segp/config/path2": "2468",
-        "sensu.io/plugins/segp/config/path8": "true"
+        "sensu.io/plugins/test/config/uint64Path": "98765",
+        "sensu.io/plugins/test/config/uint32Path": "87654",
+        "sensu.io/plugins/test/config/uint16Path": "65432",
+        "sensu.io/plugins/test/config/int64Path": "-98765",
+        "sensu.io/plugins/test/config/int32Path": "-87654",
+        "sensu.io/plugins/test/config/int16Path": "-7654",
+        "sensu.io/plugins/test/config/strPath": "entity override",
+        "sensu.io/plugins/test/config/boolPath": "true"
       }
     }
   },

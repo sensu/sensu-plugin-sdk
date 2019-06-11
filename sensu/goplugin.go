@@ -57,6 +57,10 @@ type basePlugin struct {
 	errorLogFunction       func(format string, a ...interface{})
 }
 
+const (
+	noExitStatus = 2147483647
+)
+
 func (goPlugin *basePlugin) readSensuEvent() error {
 	eventJSON, err := ioutil.ReadAll(goPlugin.eventReader)
 	if err != nil {
@@ -88,6 +92,7 @@ func (goPlugin *basePlugin) initPlugin() {
 	goPlugin.errorLogFunction = func(format string, a ...interface{}) {
 		_, _ = fmt.Fprintf(os.Stderr, format, a)
 	}
+	goPlugin.exitStatus = noExitStatus
 }
 
 func (goPlugin *basePlugin) setupArguments() error {
@@ -170,18 +175,26 @@ func (goPlugin *basePlugin) Execute() {
 	if goPlugin.cmdArgs == nil {
 		goPlugin.errorLogFunction("Error executing %s: Arguments must be initialized\n", goPlugin.config.Name)
 		goPlugin.exitFunction(goPlugin.errorExitStatus)
+		return
 	}
 
 	err := goPlugin.setupArguments()
 	if err != nil {
 		goPlugin.errorLogFunction("Error executing %s: %s\n", goPlugin.config.Name, err)
 		goPlugin.exitFunction(goPlugin.errorExitStatus)
+		return
 	}
 
 	// This will call the pluginWorkflowFunction function which implements the custom logic for that type of plugin.
 	err = goPlugin.cmdArgs.Execute()
 	if err != nil {
 		goPlugin.errorLogFunction("Error executing %s: %v\n", goPlugin.config.Name, err)
+		if goPlugin.exitStatus != noExitStatus {
+			goPlugin.exitFunction(goPlugin.exitStatus)
+		} else {
+			goPlugin.exitFunction(goPlugin.errorExitStatus)
+		}
+		return
 	}
 
 	goPlugin.exitFunction(goPlugin.exitStatus)
@@ -250,7 +263,7 @@ func setOptionValue(option *PluginConfigOption, valueStr string) error {
 	case *int16:
 		int16OptionPtrValue, ok := option.Value.(*int16)
 		if ok {
-			parsedValue, err := strconv.ParseUint(valueStr, 10, 16)
+			parsedValue, err := strconv.ParseInt(valueStr, 10, 16)
 			if err != nil {
 				return fmt.Errorf("Error parsing %s into a uint16 for option %s", valueStr, option.Argument)
 			}
