@@ -320,7 +320,7 @@ func TestSetOptionValue_InvalidBool(t *testing.T) {
 func TestGoPlugin_Execute_CmdLineArgs(t *testing.T) {
 	workflowExecuted := false
 	clearEnvironment()
-	exitStatus, errStr := goPluginExecuteUtil(t, "test/event-no-override.json", cmdLineArgsDefault,
+	exitStatus, errStr := goPluginExecuteUtil(t, defaultPluginConfig, "test/event-no-override.json", cmdLineArgsDefault,
 		&expectedCmdLineValues,
 		func(args []string) (int, error) {
 			workflowExecuted = true
@@ -338,7 +338,7 @@ func TestGoPlugin_Execute_CmdLineArgs_InvalidValue(t *testing.T) {
 	cmdLineArgs := append([]string(nil), cmdLineArgsDefault...)
 	cmdLineArgs[1] = "not an int"
 
-	exitStatus, errStr := goPluginExecuteUtil(t, "test/event-no-override.json", cmdLineArgs, nil,
+	exitStatus, errStr := goPluginExecuteUtil(t, defaultPluginConfig, "test/event-no-override.json", cmdLineArgs, nil,
 		func(args []string) (int, error) {
 			workflowExecuted = true
 			return 0, nil
@@ -353,7 +353,7 @@ func TestGoPlugin_Execute_Environment(t *testing.T) {
 	workflowExecuted := false
 	clearEnvironment()
 	setEnvironment()
-	exitStatus, errStr := goPluginExecuteUtil(t, "test/event-no-override.json", cmdLineArgsNoArgs,
+	exitStatus, errStr := goPluginExecuteUtil(t, defaultPluginConfig, "test/event-no-override.json", cmdLineArgsNoArgs,
 		&expectedEnvironmentValues,
 		func(args []string) (int, error) {
 			workflowExecuted = true
@@ -368,7 +368,7 @@ func TestGoPlugin_Execute_Environment(t *testing.T) {
 func TestGoPlugin_Execute_ShortCmdLineArgs(t *testing.T) {
 	workflowExecuted := false
 	clearEnvironment()
-	exitStatus, errStr := goPluginExecuteUtil(t, "test/event-no-override.json", cmdLineArgsShort,
+	exitStatus, errStr := goPluginExecuteUtil(t, defaultPluginConfig, "test/event-no-override.json", cmdLineArgsShort,
 		&expectedShortCmdLineValues,
 		func(args []string) (int, error) {
 			workflowExecuted = true
@@ -386,7 +386,7 @@ func TestGoPlugin_Execute_ShortCmdLineArgs_InvalidValue(t *testing.T) {
 	cmdLineArgs := append([]string(nil), cmdLineArgsShort...)
 	cmdLineArgs[3] = "not an int"
 
-	exitStatus, errStr := goPluginExecuteUtil(t, "test/event-no-override.json", cmdLineArgs, nil,
+	exitStatus, errStr := goPluginExecuteUtil(t, defaultPluginConfig, "test/event-no-override.json", cmdLineArgs, nil,
 		func(args []string) (int, error) {
 			workflowExecuted = true
 			return 0, nil
@@ -400,7 +400,7 @@ func TestGoPlugin_Execute_ShortCmdLineArgs_InvalidValue(t *testing.T) {
 func TestGoPlugin_Execute_EntityOverride(t *testing.T) {
 	workflowExecuted := false
 	clearEnvironment()
-	exitStatus, errStr := goPluginExecuteUtil(t, "test/event-entity-override.json", cmdLineArgsDefault,
+	exitStatus, errStr := goPluginExecuteUtil(t, defaultPluginConfig, "test/event-entity-override.json", cmdLineArgsDefault,
 		&expectedEntityOverrideValues,
 		func(args []string) (int, error) {
 			workflowExecuted = true
@@ -416,7 +416,7 @@ func TestGoPlugin_Execute_EntityOverride_InvalidValue(t *testing.T) {
 	workflowExecuted := false
 	clearEnvironment()
 
-	exitStatus, errStr := goPluginExecuteUtil(t, "test/event-entity-override-invalid-value.json", cmdLineArgsDefault, nil,
+	exitStatus, errStr := goPluginExecuteUtil(t, defaultPluginConfig, "test/event-entity-override-invalid-value.json", cmdLineArgsDefault, nil,
 		func(args []string) (int, error) {
 			workflowExecuted = true
 			return 0, nil
@@ -430,7 +430,7 @@ func TestGoPlugin_Execute_EntityOverride_InvalidValue(t *testing.T) {
 func TestGoPlugin_Execute_CheckOverride(t *testing.T) {
 	workflowExecuted := false
 	clearEnvironment()
-	exitStatus, errStr := goPluginExecuteUtil(t, "test/event-check-override.json", cmdLineArgsDefault,
+	exitStatus, errStr := goPluginExecuteUtil(t, defaultPluginConfig, "test/event-check-override.json", cmdLineArgsDefault,
 		&expectedCheckOverrideValues,
 		func(args []string) (int, error) {
 			workflowExecuted = true
@@ -446,7 +446,7 @@ func TestGoPlugin_Execute_CheckOverride_InvalidValue(t *testing.T) {
 	workflowExecuted := false
 	clearEnvironment()
 
-	exitStatus, errStr := goPluginExecuteUtil(t, "test/event-check-override-invalid-value.json", cmdLineArgsDefault, nil,
+	exitStatus, errStr := goPluginExecuteUtil(t, defaultPluginConfig, "test/event-check-override-invalid-value.json", cmdLineArgsDefault, nil,
 		func(args []string) (int, error) {
 			workflowExecuted = true
 			return 0, nil
@@ -461,7 +461,7 @@ func TestGoPlugin_Execute_PriorityCheck(t *testing.T) {
 	workflowExecuted := false
 	clearEnvironment()
 	setEnvironment()
-	exitStatus, errStr := goPluginExecuteUtil(t, "test/event-check-entity-override.json", cmdLineArgsDefault,
+	exitStatus, errStr := goPluginExecuteUtil(t, defaultPluginConfig, "test/event-check-entity-override.json", cmdLineArgsDefault,
 		&expectedCheckOverrideValues,
 		func(args []string) (int, error) {
 			workflowExecuted = true
@@ -477,7 +477,7 @@ func TestGoPlugin_Execute_PriorityEntity(t *testing.T) {
 	workflowExecuted := false
 	clearEnvironment()
 	setEnvironment()
-	exitStatus, errStr := goPluginExecuteUtil(t, "test/event-entity-override.json", cmdLineArgsDefault,
+	exitStatus, errStr := goPluginExecuteUtil(t, defaultPluginConfig, "test/event-entity-override.json", cmdLineArgsDefault,
 		&expectedEntityOverrideValues,
 		func(args []string) (int, error) {
 			workflowExecuted = true
@@ -493,7 +493,7 @@ func TestGoPlugin_Execute_PriorityCmdLine(t *testing.T) {
 	workflowExecuted := false
 	clearEnvironment()
 	setEnvironment()
-	exitStatus, errStr := goPluginExecuteUtil(t, "test/event-no-override.json", cmdLineArgsDefault,
+	exitStatus, errStr := goPluginExecuteUtil(t, defaultPluginConfig, "test/event-no-override.json", cmdLineArgsDefault,
 		&expectedCmdLineValues,
 		func(args []string) (int, error) {
 			workflowExecuted = true
@@ -509,7 +509,7 @@ func TestGoPlugin_Execute_WorkflowError(t *testing.T) {
 	workflowExecuted := false
 	clearEnvironment()
 	setEnvironment()
-	exitStatus, errStr := goPluginExecuteUtil(t, "test/event-no-override.json", cmdLineArgsDefault,
+	exitStatus, errStr := goPluginExecuteUtil(t, defaultPluginConfig, "test/event-no-override.json", cmdLineArgsDefault,
 		&expectedCmdLineValues,
 		func(args []string) (int, error) {
 			workflowExecuted = true
@@ -525,7 +525,7 @@ func TestGoPlugin_Execute_EventNoTimestamp(t *testing.T) {
 	workflowExecuted := false
 	clearEnvironment()
 	setEnvironment()
-	exitStatus, errStr := goPluginExecuteUtil(t, "test/event-no-timestamp.json", cmdLineArgsDefault, nil,
+	exitStatus, errStr := goPluginExecuteUtil(t, defaultPluginConfig, "test/event-no-timestamp.json", cmdLineArgsDefault, nil,
 		func(args []string) (int, error) {
 			workflowExecuted = true
 			return 2, fmt.Errorf("something went wrong")
@@ -540,7 +540,7 @@ func TestGoPlugin_Execute_EventZeroTimestamp(t *testing.T) {
 	workflowExecuted := false
 	clearEnvironment()
 	setEnvironment()
-	exitStatus, errStr := goPluginExecuteUtil(t, "test/event-timestamp-zero.json", cmdLineArgsDefault, nil,
+	exitStatus, errStr := goPluginExecuteUtil(t, defaultPluginConfig, "test/event-timestamp-zero.json", cmdLineArgsDefault, nil,
 		func(args []string) (int, error) {
 			workflowExecuted = true
 			return 2, fmt.Errorf("something went wrong")
@@ -555,7 +555,7 @@ func TestGoPlugin_Execute_EventNoEntity(t *testing.T) {
 	workflowExecuted := false
 	clearEnvironment()
 	setEnvironment()
-	exitStatus, errStr := goPluginExecuteUtil(t, "test/event-no-entity.json", cmdLineArgsDefault, nil,
+	exitStatus, errStr := goPluginExecuteUtil(t, defaultPluginConfig, "test/event-no-entity.json", cmdLineArgsDefault, nil,
 		func(args []string) (int, error) {
 			workflowExecuted = true
 			return 2, fmt.Errorf("something went wrong")
@@ -570,7 +570,7 @@ func TestGoPlugin_Execute_EventInvalidEntity(t *testing.T) {
 	workflowExecuted := false
 	clearEnvironment()
 	setEnvironment()
-	exitStatus, errStr := goPluginExecuteUtil(t, "test/event-invalid-entity.json", cmdLineArgsDefault, nil,
+	exitStatus, errStr := goPluginExecuteUtil(t, defaultPluginConfig, "test/event-invalid-entity.json", cmdLineArgsDefault, nil,
 		func(args []string) (int, error) {
 			workflowExecuted = true
 			return 2, fmt.Errorf("something went wrong")
@@ -585,7 +585,7 @@ func TestGoPlugin_Execute_EventNoCheck(t *testing.T) {
 	workflowExecuted := false
 	clearEnvironment()
 	setEnvironment()
-	exitStatus, errStr := goPluginExecuteUtil(t, "test/event-no-check.json", cmdLineArgsDefault, nil,
+	exitStatus, errStr := goPluginExecuteUtil(t, defaultPluginConfig, "test/event-no-check.json", cmdLineArgsDefault, nil,
 		func(args []string) (int, error) {
 			workflowExecuted = true
 			return 2, fmt.Errorf("something went wrong")
@@ -600,7 +600,7 @@ func TestGoPlugin_Execute_EventInvalidCheck(t *testing.T) {
 	workflowExecuted := false
 	clearEnvironment()
 	setEnvironment()
-	exitStatus, errStr := goPluginExecuteUtil(t, "test/event-invalid-check.json", cmdLineArgsDefault, nil,
+	exitStatus, errStr := goPluginExecuteUtil(t, defaultPluginConfig, "test/event-invalid-check.json", cmdLineArgsDefault, nil,
 		func(args []string) (int, error) {
 			workflowExecuted = true
 			return 2, fmt.Errorf("something went wrong")
@@ -615,7 +615,7 @@ func TestGoPlugin_Execute_EventInvalidJson(t *testing.T) {
 	workflowExecuted := false
 	clearEnvironment()
 	setEnvironment()
-	exitStatus, errStr := goPluginExecuteUtil(t, "test/event-invalid-json.json", cmdLineArgsDefault, nil,
+	exitStatus, errStr := goPluginExecuteUtil(t, defaultPluginConfig, "test/event-invalid-json.json", cmdLineArgsDefault, nil,
 		func(args []string) (int, error) {
 			workflowExecuted = true
 			return 2, fmt.Errorf("something went wrong")
@@ -624,6 +624,74 @@ func TestGoPlugin_Execute_EventInvalidJson(t *testing.T) {
 	assert.Equal(t, 1, exitStatus)
 	assert.Contains(t, errStr, "Failed to unmarshal STDIN data")
 	assert.False(t, workflowExecuted)
+}
+
+// Test no keyspace
+func TestGoPlugin_Execute_NoKeyspace(t *testing.T) {
+	workflowExecuted := false
+	clearEnvironment()
+	noKeyspaceConfig := *defaultPluginConfig
+	noKeyspaceConfig.Keyspace = ""
+	exitStatus, err := goPluginExecuteUtil(t, &noKeyspaceConfig, "test/event-check-entity-override.json", cmdLineArgsDefault,
+		&expectedCmdLineValues,
+		func(args []string) (int, error) {
+			workflowExecuted = true
+			return 0, nil
+		})
+	assert.Equal(t, 0, exitStatus)
+	assert.Equal(t, "", err)
+	assert.True(t, workflowExecuted)
+}
+
+// Test fail to read stdin
+func TestGoPlugin_Execute_ReaderError(t *testing.T) {
+	workflowExecuted := false
+	clearEnvironment()
+
+	exitStatus, err := goPluginExecuteUtil(t, defaultPluginConfig, "test/not-a-file.json", cmdLineArgsDefault,
+		&expectedCmdLineValues,
+		func(args []string) (int, error) {
+			workflowExecuted = true
+			return 0, nil
+		})
+	assert.Equal(t, 1, exitStatus)
+	assert.Contains(t, err, "invalid argument")
+	assert.False(t, workflowExecuted)
+}
+
+func TestGoPlugin_NoInit(t *testing.T) {
+	exitFunctionExecuted := false
+	workflowExecuted := false
+	errStr := ""
+	values := allTestValues{}
+	options := getTestOptions(&values)
+	eventReader := getFileReader("test/event-check-entity-override.json")
+	goPlugin := &basePlugin{
+		config:                 defaultPluginConfig,
+		options:                options,
+		sensuEvent:             nil,
+		eventReader:            eventReader,
+		readEvent:              true,
+		eventMandatory:         true,
+		configurationOverrides: true,
+		errorExitStatus:        1,
+		pluginWorkflowFunction: func(strings []string) (i int, e error) {
+			workflowExecuted = true
+			return 0, nil
+		},
+		errorLogFunction: func(format string, a ...interface{}) {
+			errStr = format
+		},
+		exitFunction: func(i int) {
+			exitFunctionExecuted = true
+		},
+	}
+
+	goPlugin.Execute()
+
+	assert.True(t, exitFunctionExecuted)
+	assert.False(t, workflowExecuted)
+	assert.Contains(t, errStr, "Arguments must be initialized")
 }
 
 func getFileReader(file string) io.Reader {
@@ -654,7 +722,7 @@ func setEnvironment() {
 	_ = os.Setenv("BOOL_ENV", "true")
 }
 
-func goPluginExecuteUtil(t *testing.T, eventFile string, cmdLineArgs []string, expectedValues *allTestValues,
+func goPluginExecuteUtil(t *testing.T, pluginConfig *PluginConfig, eventFile string, cmdLineArgs []string, expectedValues *allTestValues,
 	workflowFunction func([]string) (int, error)) (int, string) {
 	values := allTestValues{}
 	options := getTestOptions(&values)
@@ -663,7 +731,7 @@ func goPluginExecuteUtil(t *testing.T, eventFile string, cmdLineArgs []string, e
 		eventReader = getFileReader(eventFile)
 	}
 
-	basePlugin := newTestGoPlugin(options, eventReader, workflowFunction)
+	basePlugin := newTestGoPlugin(pluginConfig, options, eventReader, workflowFunction)
 
 	// Simulate the command line arguments if necessary
 	if len(cmdLineArgs) > 0 {
@@ -698,9 +766,9 @@ func goPluginExecuteUtil(t *testing.T, eventFile string, cmdLineArgs []string, e
 	return exitStatus, errorStr
 }
 
-func newTestGoPlugin(options []*PluginConfigOption, eventReader io.Reader, workflowFunction func([]string) (int, error)) *basePlugin {
+func newTestGoPlugin(pluginConfig *PluginConfig, options []*PluginConfigOption, eventReader io.Reader, workflowFunction func([]string) (int, error)) *basePlugin {
 	goPlugin := &basePlugin{
-		config:                 defaultPluginConfig,
+		config:                 pluginConfig,
 		options:                options,
 		sensuEvent:             nil,
 		eventReader:            eventReader,

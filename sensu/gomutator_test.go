@@ -123,7 +123,6 @@ func TestGoMutator_Execute_Check_NilEvent(t *testing.T) {
 	assert.True(t, executeCalled)
 
 	output := writer.(*bytes.Buffer).String()
-	fmt.Printf("Output: %s", output)
 	assert.Equal(t, output, "{}")
 }
 
@@ -164,50 +163,6 @@ func TestGoMutator_Execute_ExecuteError(t *testing.T) {
 		})
 	assert.Equal(t, 1, exitStatus)
 	assert.Contains(t, err, "error executing mutator: execution error")
-	assert.True(t, validateCalled)
-	assert.True(t, executeCalled)
-}
-
-// Test fail to read stdin
-func TestGoMutator_Execute_ReaderError(t *testing.T) {
-	var validateCalled, executeCalled bool
-	clearEnvironment()
-	exitStatus, err := goMutatorExecuteUtil(t, defaultPluginConfig, "test/event-invalid-json.json", cmdLineArgsDefault,
-		&expectedCmdLineValues, nil,
-		func(event *types.Event) error {
-			validateCalled = true
-			assert.NotNil(t, event)
-			return nil
-		}, func(event *types.Event) (*types.Event, error) {
-			executeCalled = true
-			assert.NotNil(t, event)
-			return nil, nil
-		})
-	assert.Equal(t, 1, exitStatus)
-	assert.Contains(t, err, "Failed to unmarshal STDIN data: invalid character ':' after object key:value pair")
-	assert.False(t, validateCalled)
-	assert.False(t, executeCalled)
-}
-
-// Test no keyspace
-func TestGoMutator_Execute_NoKeyspace(t *testing.T) {
-	var validateCalled, executeCalled bool
-	clearEnvironment()
-	mutatorConfig := *defaultPluginConfig
-	mutatorConfig.Keyspace = ""
-	exitStatus, err := goMutatorExecuteUtil(t, &mutatorConfig, "test/event-check-entity-override.json", cmdLineArgsDefault,
-		&expectedCmdLineValues, nil,
-		func(event *types.Event) error {
-			validateCalled = true
-			assert.NotNil(t, event)
-			return nil
-		}, func(event *types.Event) (*types.Event, error) {
-			executeCalled = true
-			assert.NotNil(t, event)
-			return nil, nil
-		})
-	assert.Equal(t, 0, exitStatus)
-	assert.Equal(t, "", err)
 	assert.True(t, validateCalled)
 	assert.True(t, executeCalled)
 }
