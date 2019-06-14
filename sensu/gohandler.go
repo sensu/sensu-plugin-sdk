@@ -6,15 +6,15 @@ import (
 	"os"
 )
 
-type goHandler struct {
+type GoHandler struct {
 	basePlugin
 	validationFunction func(event *types.Event) error
 	executeFunction    func(event *types.Event) error
 }
 
 func NewGoHandler(config *PluginConfig, options []*PluginConfigOption,
-	validationFunction func(event *types.Event) error, executeFunction func(event *types.Event) error) GoPlugin {
-	goHandler := &goHandler{
+	validationFunction func(event *types.Event) error, executeFunction func(event *types.Event) error) *GoHandler {
+	goHandler := &GoHandler{
 		basePlugin: basePlugin{
 			config:                 config,
 			options:                options,
@@ -36,7 +36,7 @@ func NewGoHandler(config *PluginConfig, options []*PluginConfigOption,
 }
 
 // Executes the handler's workflow
-func (goHandler *goHandler) goHandlerWorkflow(_ []string) (int, error) {
+func (goHandler *GoHandler) goHandlerWorkflow(_ []string) (int, error) {
 	// Validate input using validateFunction
 	err := goHandler.validationFunction(goHandler.sensuEvent)
 	if err != nil {
