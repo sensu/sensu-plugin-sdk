@@ -3,7 +3,9 @@ package args
 import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
+	"log"
 	"os"
+	"reflect"
 	"strconv"
 	"testing"
 )
@@ -301,6 +303,37 @@ func TestArgs_Help(t *testing.T) {
 	err := arguments.Help()
 
 	assert.Nil(t, err)
+}
+
+func TestTypeOf(t *testing.T) {
+	var intValue uint32
+	var myInterface interface{} = &intValue
+	strValue := "343aa4"
+
+	interfaceType := reflect.TypeOf(myInterface)
+	interfaceKind := interfaceType.Kind()
+	if interfaceKind == reflect.Ptr {
+		element := interfaceType.Elem()
+		elementKind := element.Kind()
+		conversionFunction := supportedArgumentKinds[elementKind]
+
+		log.Printf("Type: %v", conversionFunction)
+
+		if conversionFunction != nil {
+			arguments := append([]reflect.Value{reflect.ValueOf(strValue)}, conversionFunction.args...)
+			conversionFunction := reflect.ValueOf(conversionFunction.parseFunction)
+			returnValues := conversionFunction.Call(arguments)
+
+			valueInterface := returnValues[0].Interface()
+			errorInterface := returnValues[1].Interface()
+
+			if errorInterface != nil {
+				log.Printf("there is an error: %s", errorInterface.(error))
+			} else {
+				log.Printf("Returned value: %d", valueInterface)
+			}
+		}
+	}
 }
 
 func setupArgs(arguments *Args, argValues *argumentValues) {

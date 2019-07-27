@@ -1,12 +1,15 @@
 package args
 
 import (
+	"fmt"
 	"github.com/spf13/cobra"
+	"log"
 	"os"
+	"reflect"
 	"strconv"
 )
 
-// ExecutorFunction is a type that defines a function to be executed after
+// ExecutorFunction is a type that defines a parseFunction to be executed after
 // parsing the arguments.
 type ExecutorFunction func([]string) error
 
@@ -18,6 +21,81 @@ type Args struct {
 	cmd  *cobra.Command
 	runE ExecutorFunction
 }
+
+type supportedType struct {
+	parseFunction interface{}
+	functionName  string
+	args          []reflect.Value
+}
+
+var (
+	supportedArgumentKinds = map[reflect.Kind]*supportedType{
+		reflect.Uint64: {
+			parseFunction: strconv.ParseUint,
+			functionName:  "strconv.ParseUint",
+			args: []reflect.Value{
+				reflect.ValueOf(10),
+				reflect.ValueOf(64),
+			},
+		},
+		reflect.Uint32: {
+			parseFunction: strconv.ParseUint,
+			functionName:  "strconv.ParseUint",
+			args: []reflect.Value{
+				reflect.ValueOf(10),
+				reflect.ValueOf(32),
+			},
+		},
+		reflect.Uint16: {
+			parseFunction: strconv.ParseUint,
+			functionName:  "strconv.ParseUint",
+			args: []reflect.Value{
+				reflect.ValueOf(10),
+				reflect.ValueOf(16),
+			},
+		},
+		reflect.Uint8: {
+			parseFunction: strconv.ParseUint,
+			functionName:  "strconv.ParseUint",
+			args: []reflect.Value{
+				reflect.ValueOf(10),
+				reflect.ValueOf(8),
+			},
+		},
+		reflect.Int64: {
+			parseFunction: strconv.ParseInt,
+			functionName:  "strconv.ParseInt",
+			args: []reflect.Value{
+				reflect.ValueOf(10),
+				reflect.ValueOf(64),
+			},
+		},
+		reflect.Int32: {
+			parseFunction: strconv.ParseInt,
+			functionName:  "strconv.ParseInt",
+			args: []reflect.Value{
+				reflect.ValueOf(10),
+				reflect.ValueOf(32),
+			},
+		},
+		reflect.Int16: {
+			parseFunction: strconv.ParseInt,
+			functionName:  "strconv.ParseInt",
+			args: []reflect.Value{
+				reflect.ValueOf(10),
+				reflect.ValueOf(16),
+			},
+		},
+		reflect.Int8: {
+			parseFunction: strconv.ParseInt,
+			functionName:  "strconv.ParseInt",
+			args: []reflect.Value{
+				reflect.ValueOf(10),
+				reflect.ValueOf(8),
+			},
+		},
+	}
+)
 
 // NewArgs creates an Args object based on the cobra library
 func NewArgs(use string, short string, runE ExecutorFunction) *Args {
@@ -33,8 +111,8 @@ func NewArgs(use string, short string, runE ExecutorFunction) *Args {
 	return args
 }
 
-// cobraRunE is the function to execute by cobra when done with parsing the
-// arguments. It simply passes control over to the the Args.runE function.
+// cobraRunE is the parseFunction to execute by cobra when done with parsing the
+// arguments. It simply passes control over to the the Args.runE parseFunction.
 func (args *Args) cobraRunE(cmd *cobra.Command, arguments []string) error {
 	return args.runE(arguments)
 }
@@ -192,6 +270,49 @@ func (args *Args) BoolVarP(p *bool, name, shorthand string, envKey string, defau
 		}
 	}
 	args.cmd.Flags().BoolVarP(p, name, shorthand, envValue, usage)
+}
+
+func (args *Args) SetVarP(destValue interface{}, name, shorthand, envKey string, defaultValue interface{}, usage string) error {
+
+	if destValue == nil {
+		return fmt.Errorf("destValue must not be nil")
+	}
+
+	interfaceType := reflect.TypeOf(destValue)
+	interfaceKind := interfaceType.Kind()
+	if interfaceKind == reflect.Ptr {
+		element := interfaceType.Elem()
+		elementKind := element.Kind()
+		conversionFunction := supportedArgumentKinds[elementKind]
+
+		log.Printf("Type: %v", conversionFunction)
+
+		if conversionFunction != nil {
+
+			arguments := append([]reflect.Value{reflect.ValueOf(strValue)}, conversionFunction.args...)
+			conversionFunction := reflect.ValueOf(conversionFunction.parseFunction)
+			returnValues := conversionFunction.Call(arguments)
+
+			valueInterface := returnValues[0].Interface()
+			errorInterface := returnValues[1].Interface()
+
+			if errorInterface != nil {
+				log.Printf("there is an error: %s", errorInterface.(error))
+			} else {
+				log.Printf("Returned value: %d", valueInterface)
+			}
+		} else {
+			return fmt.Errorf("destValue type not supported: %s", interfaceType)
+		}
+	} else {
+		return fmt.Errorf("destValue must be a pointer")
+	}
+
+	return nil
+}
+
+func readEnvVariable(envKey string, kind reflect.Kind, supportedType *supportedType) (reflect.Value, error) {
+	envValue, found := os.LookupEnv(envKey)
 }
 
 func (args *Args) SetArgs(newArgs []string) {
