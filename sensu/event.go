@@ -2,17 +2,20 @@ package sensu
 
 import (
 	"fmt"
+
 	"github.com/sensu/sensu-go/types"
 )
 
+const nilStr = "nil"
+
 // EventKey returns the event key using the event's entity name and check name
 func EventKey(event *types.Event) string {
-	entityName := "nil"
+	entityName := nilStr
 	if event != nil && event.Entity != nil && len(event.Entity.Name) > 0 {
 		entityName = event.Entity.Name
 	}
 
-	checkName := "nil"
+	checkName := nilStr
 	if event != nil && event.Check != nil && len(event.Check.Name) > 0 {
 		checkName = event.Check.Name
 	}
@@ -23,7 +26,7 @@ func EventKey(event *types.Event) string {
 func EventSummaryWithTrim(event *types.Event, trimAt int) string {
 	// TODO: Ruby code uses check[:notification] and check[:description] which are not present in the GO code.
 	// Skipping them from now.
-	output := "nil"
+	output := nilStr
 	if event != nil && event.Check != nil && len(event.Check.Output) > 0 {
 		output = event.Check.Output
 	}
