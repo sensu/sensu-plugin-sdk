@@ -21,6 +21,113 @@ type argumentValues struct {
 	booleanArg bool
 }
 
+type readEnvTestData struct {
+	envKind       reflect.Kind
+	envValue      string
+	expectedValue interface{}
+	expectedError bool
+}
+
+var (
+	envTestDataRecords = []readEnvTestData{
+		{reflect.Int8, "0", int8(0), false},
+		{reflect.Int8, "127", int8(127), false},
+		{reflect.Int8, "-128", int8(-128), false},
+		{reflect.Int8, "-44", int8(-44), false},
+		{reflect.Int8, "44", int8(44), false},
+		{reflect.Int8, "-129", nil, true},
+		{reflect.Int8, "128", nil, true},
+		{reflect.Int8, "-21474836499999", nil, true},
+		{reflect.Int8, "21474836489999", nil, true},
+		{reflect.Int8, "", nil, true},
+		{reflect.Int8, "abcde", nil, true},
+
+		{reflect.Int16, "0", int16(0), false},
+		{reflect.Int16, "12345", int16(12345), false},
+		{reflect.Int16, "-12345", int16(-12345), false},
+		{reflect.Int16, "-32768", int16(-32768), false},
+		{reflect.Int16, "32767", int16(32767), false},
+		{reflect.Int16, "-32769", nil, true},
+		{reflect.Int16, "32768", nil, true},
+		{reflect.Int16, "-21474836499999", nil, true},
+		{reflect.Int16, "21474836489999", nil, true},
+		{reflect.Int16, "", nil, true},
+		{reflect.Int16, "abcde", nil, true},
+
+		{reflect.Int32, "0", int32(0), false},
+		{reflect.Int32, "12345", int32(12345), false},
+		{reflect.Int32, "-12345", int32(-12345), false},
+		{reflect.Int32, "-2147483648", int32(-2147483648), false},
+		{reflect.Int32, "2147483647", int32(2147483647), false},
+		{reflect.Int32, "-2147483649", nil, true},
+		{reflect.Int32, "2147483648", nil, true},
+		{reflect.Int32, "-21474836499999", nil, true},
+		{reflect.Int32, "21474836489999", nil, true},
+		{reflect.Int32, "", nil, true},
+		{reflect.Int32, "abcde", nil, true},
+
+		{reflect.Int64, "0", int64(0), false},
+		{reflect.Int64, "12345", int64(12345), false},
+		{reflect.Int64, "-12345", int64(-12345), false},
+		{reflect.Int64, "-9223372036854775808", int64(-9223372036854775808), false},
+		{reflect.Int64, "9223372036854775807", int64(9223372036854775807), false},
+		{reflect.Int64, "-9223372036854775809", nil, true},
+		{reflect.Int64, "9223372036854775808", nil, true},
+		{reflect.Int64, "-21474839999996499999", nil, true},
+		{reflect.Int64, "214748364999999989999", nil, true},
+		{reflect.Int64, "", nil, true},
+		{reflect.Int64, "abcde", nil, true},
+
+		{reflect.Uint8, "0", uint8(0), false},
+		{reflect.Uint8, "255", uint8(255), false},
+		{reflect.Uint8, "-128", nil, true},
+		{reflect.Uint8, "-44", nil, true},
+		{reflect.Uint8, "44", uint8(44), false},
+		{reflect.Uint8, "-256", nil, true},
+		{reflect.Uint8, "256", nil, true},
+		{reflect.Uint8, "-21474836499999", nil, true},
+		{reflect.Uint8, "21474836489999", nil, true},
+		{reflect.Uint8, "", nil, true},
+		{reflect.Uint8, "abcde", nil, true},
+
+		{reflect.Uint16, "0", uint16(0), false},
+		{reflect.Uint16, "12345", uint16(12345), false},
+		{reflect.Uint16, "-12345", nil, true},
+		{reflect.Uint16, "-32768", nil, true},
+		{reflect.Uint16, "65535", uint16(65535), false},
+		{reflect.Uint16, "-32769", nil, true},
+		{reflect.Uint16, "65536", nil, true},
+		{reflect.Uint16, "-21474836499999", nil, true},
+		{reflect.Uint16, "21474836489999", nil, true},
+		{reflect.Uint16, "", nil, true},
+		{reflect.Uint16, "abcde", nil, true},
+
+		{reflect.Uint32, "0", uint32(0), false},
+		{reflect.Uint32, "12345", uint32(12345), false},
+		{reflect.Uint32, "-12345", nil, true},
+		{reflect.Uint32, "-2147483648", nil, true},
+		{reflect.Uint32, "4294967295", uint32(4294967295), false},
+		{reflect.Uint32, "-2147483649", nil, true},
+		{reflect.Uint32, "4294967296", nil, true},
+		{reflect.Uint32, "-21474836499999", nil, true},
+		{reflect.Uint32, "21474836489999", nil, true},
+		{reflect.Uint32, "", nil, true},
+		{reflect.Uint32, "abcde", nil, true},
+
+		{reflect.Uint64, "0", uint64(0), false},
+		{reflect.Uint64, "12345", uint64(12345), false},
+		{reflect.Uint64, "-12345", nil, true},
+		{reflect.Uint64, "-9223372036854775808", nil, true},
+		{reflect.Uint64, "18446744073709551615", uint64(18446744073709551615), false},
+		{reflect.Uint64, "-9223372036854775809", nil, true},
+		{reflect.Uint64, "18446744073709551616", nil, true},
+		{reflect.Uint64, "-21474839999996499999", nil, true},
+		{reflect.Uint64, "214748364999999989999", nil, true},
+		{reflect.Uint64, "", nil, true},
+		{reflect.Uint64, "abcde", nil, true},
+	}
+)
+
 const (
 	stringArg        = "string argument"
 	uint64Arg uint64 = 18446744073709551615
@@ -39,6 +146,8 @@ const (
 	int32EnvVar  = "ENV_INT32"
 	int16EnvVar  = "ENV_INT16"
 	boolEnvVar   = "ENV_BOOL"
+
+	readEnvVar = "TEST_ARG"
 
 	defaultStringArg string = "default str"
 	defaultUint64Arg uint64 = 6744073709551615
@@ -321,7 +430,7 @@ func TestTypeOf(t *testing.T) {
 
 		if conversionFunction != nil {
 			arguments := append([]reflect.Value{reflect.ValueOf(strValue)}, conversionFunction.args...)
-			conversionFunction := reflect.ValueOf(conversionFunction.parseFunction)
+			conversionFunction := reflect.ValueOf(conversionFunction.envValueParseFunction)
 			returnValues := conversionFunction.Call(arguments)
 
 			valueInterface := returnValues[0].Interface()
@@ -332,6 +441,27 @@ func TestTypeOf(t *testing.T) {
 			} else {
 				log.Printf("Returned value: %d", valueInterface)
 			}
+		}
+	}
+}
+
+func TestReadEnvVariable_Int32Loop(t *testing.T) {
+	for envTestDataRecordIdx, envTestDataRecord := range envTestDataRecords {
+		log.Printf("Processing record %2d: %+v\n", envTestDataRecordIdx, envTestDataRecord)
+
+		_ = os.Setenv(readEnvVar, envTestDataRecord.envValue)
+		supportedType := supportedArgumentKinds[envTestDataRecord.envKind]
+		value, err := readEnvVariable(readEnvVar, envTestDataRecord.envKind, supportedType)
+
+		if envTestDataRecord.expectedValue != nil {
+			assert.Equal(t, envTestDataRecord.expectedValue, value, "Idx=%d: %+v", envTestDataRecordIdx, envTestDataRecord)
+		} else {
+			assert.Nil(t, value, "Idx=%d: %+v", envTestDataRecordIdx, envTestDataRecord)
+		}
+		if envTestDataRecord.expectedError {
+			assert.NotNil(t, err, "Idx=%d: %+v", envTestDataRecordIdx, envTestDataRecord)
+		} else {
+			assert.Nil(t, err, "Idx=%d: %+v", envTestDataRecordIdx, envTestDataRecord)
 		}
 	}
 }

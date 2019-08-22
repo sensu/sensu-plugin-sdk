@@ -9,7 +9,7 @@ import (
 	"strconv"
 )
 
-// ExecutorFunction is a type that defines a parseFunction to be executed after
+// ExecutorFunction is a type that defines a envValueParseFunction to be executed after
 // parsing the arguments.
 type ExecutorFunction func([]string) error
 
@@ -23,76 +23,87 @@ type Args struct {
 }
 
 type supportedType struct {
-	parseFunction interface{}
-	functionName  string
-	args          []reflect.Value
+	envValueParseFunction interface{}
+	args                  []reflect.Value
 }
 
 var (
 	supportedArgumentKinds = map[reflect.Kind]*supportedType{
 		reflect.Uint64: {
-			parseFunction: strconv.ParseUint,
-			functionName:  "strconv.ParseUint",
+			envValueParseFunction: strconv.ParseUint,
 			args: []reflect.Value{
 				reflect.ValueOf(10),
 				reflect.ValueOf(64),
 			},
 		},
 		reflect.Uint32: {
-			parseFunction: strconv.ParseUint,
-			functionName:  "strconv.ParseUint",
+			envValueParseFunction: strconv.ParseUint,
 			args: []reflect.Value{
 				reflect.ValueOf(10),
 				reflect.ValueOf(32),
 			},
 		},
 		reflect.Uint16: {
-			parseFunction: strconv.ParseUint,
-			functionName:  "strconv.ParseUint",
+			envValueParseFunction: strconv.ParseUint,
 			args: []reflect.Value{
 				reflect.ValueOf(10),
 				reflect.ValueOf(16),
 			},
 		},
 		reflect.Uint8: {
-			parseFunction: strconv.ParseUint,
-			functionName:  "strconv.ParseUint",
+			envValueParseFunction: strconv.ParseUint,
 			args: []reflect.Value{
 				reflect.ValueOf(10),
 				reflect.ValueOf(8),
 			},
 		},
 		reflect.Int64: {
-			parseFunction: strconv.ParseInt,
-			functionName:  "strconv.ParseInt",
+			envValueParseFunction: strconv.ParseInt,
 			args: []reflect.Value{
 				reflect.ValueOf(10),
 				reflect.ValueOf(64),
 			},
 		},
 		reflect.Int32: {
-			parseFunction: strconv.ParseInt,
-			functionName:  "strconv.ParseInt",
+			envValueParseFunction: strconv.ParseInt,
 			args: []reflect.Value{
 				reflect.ValueOf(10),
 				reflect.ValueOf(32),
 			},
 		},
 		reflect.Int16: {
-			parseFunction: strconv.ParseInt,
-			functionName:  "strconv.ParseInt",
+			envValueParseFunction: strconv.ParseInt,
 			args: []reflect.Value{
 				reflect.ValueOf(10),
 				reflect.ValueOf(16),
 			},
 		},
 		reflect.Int8: {
-			parseFunction: strconv.ParseInt,
-			functionName:  "strconv.ParseInt",
+			envValueParseFunction: strconv.ParseInt,
 			args: []reflect.Value{
 				reflect.ValueOf(10),
 				reflect.ValueOf(8),
 			},
+		},
+		reflect.Float64: {
+			envValueParseFunction: strconv.ParseFloat,
+			args: []reflect.Value{
+				reflect.ValueOf(64),
+			},
+		},
+		reflect.Float32: {
+			envValueParseFunction: strconv.ParseFloat,
+			args: []reflect.Value{
+				reflect.ValueOf(32),
+			},
+		},
+		reflect.Bool: {
+			envValueParseFunction: strconv.ParseBool,
+			args:                  []reflect.Value{},
+		},
+		reflect.String: {
+			envValueParseFunction: nil,
+			args:                  nil,
 		},
 	}
 )
@@ -111,8 +122,8 @@ func NewArgs(use string, short string, runE ExecutorFunction) *Args {
 	return args
 }
 
-// cobraRunE is the parseFunction to execute by cobra when done with parsing the
-// arguments. It simply passes control over to the the Args.runE parseFunction.
+// cobraRunE is the envValueParseFunction to execute by cobra when done with parsing the
+// arguments. It simply passes control over to the the Args.runE envValueParseFunction.
 func (args *Args) cobraRunE(cmd *cobra.Command, arguments []string) error {
 	return args.runE(arguments)
 }
@@ -289,17 +300,12 @@ func (args *Args) SetVarP(destValue interface{}, name, shorthand, envKey string,
 
 		if conversionFunction != nil {
 
-			arguments := append([]reflect.Value{reflect.ValueOf(strValue)}, conversionFunction.args...)
-			conversionFunction := reflect.ValueOf(conversionFunction.parseFunction)
-			returnValues := conversionFunction.Call(arguments)
+			value, err := readEnvVariable(envKey, elementKind, conversionFunction)
 
-			valueInterface := returnValues[0].Interface()
-			errorInterface := returnValues[1].Interface()
-
-			if errorInterface != nil {
-				log.Printf("there is an error: %s", errorInterface.(error))
+			if err != nil {
+				log.Printf("there is an error: %s", err)
 			} else {
-				log.Printf("Returned value: %d", valueInterface)
+				log.Printf("Returned value: %d", value)
 			}
 		} else {
 			return fmt.Errorf("destValue type not supported: %s", interfaceType)
@@ -311,8 +317,61 @@ func (args *Args) SetVarP(destValue interface{}, name, shorthand, envKey string,
 	return nil
 }
 
-func readEnvVariable(envKey string, kind reflect.Kind, supportedType *supportedType) (reflect.Value, error) {
+func readEnvVariable(envKey string, kind reflect.Kind, supportedType *supportedType) (interface{}, error) {
+
 	envValue, found := os.LookupEnv(envKey)
+	if !found {
+		return reflect.ValueOf(nil), nil
+	}
+
+	function := reflect.ValueOf(supportedType.envValueParseFunction)
+	funcArgs := make([]reflect.Value, len(supportedType.args)+1)
+	funcArgs[0] = reflect.ValueOf(envValue)
+	for i := 0; i < len(supportedType.args); i++ {
+		funcArgs[i+1] = supportedType.args[i]
+	}
+
+	funcResult := function.Call(funcArgs)
+	resultValue := funcResult[0]
+	errorValue := funcResult[1]
+
+	if !errorValue.IsNil() {
+		return nil, errorValue.Interface().(error)
+	}
+
+	return castValue(resultValue, kind), nil
+}
+
+// castValue is used to cast the output of the parse function to the desired type. As such
+// it makes an assumption about the type returned by the parse function.
+func castValue(value reflect.Value, kind reflect.Kind) interface{} {
+	switch kind {
+	case reflect.Int64:
+		return value.Interface().(int64)
+	case reflect.Int32:
+		return int32(value.Interface().(int64))
+	case reflect.Int16:
+		return int16(value.Interface().(int64))
+	case reflect.Int8:
+		return int8(value.Interface().(int64))
+	case reflect.Uint64:
+		return value.Interface().(uint64)
+	case reflect.Uint32:
+		return uint32(value.Interface().(uint64))
+	case reflect.Uint16:
+		return uint16(value.Interface().(uint64))
+	case reflect.Uint8:
+		return uint8(value.Interface().(uint64))
+	case reflect.Float64:
+		return value.Interface().(float64)
+	case reflect.Float32:
+		return float32(value.Interface().(float64))
+	case reflect.Bool:
+		return value.Interface().(bool)
+	case reflect.String:
+		return value.Interface().(string)
+	}
+	return nil
 }
 
 func (args *Args) SetArgs(newArgs []string) {
