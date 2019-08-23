@@ -22,6 +22,7 @@ type Args struct {
 	runE ExecutorFunction
 }
 
+// supportedType is a structure containing meta-data for handling a type of data to be read from the environment
 type supportedType struct {
 	envValueParseFunction interface{}
 	args                  []reflect.Value
@@ -30,6 +31,14 @@ type supportedType struct {
 
 var (
 	supportedArgumentKinds = map[reflect.Kind]*supportedType{
+		reflect.Uint: {
+			envValueParseFunction: strconv.ParseUint,
+			args: []reflect.Value{
+				reflect.ValueOf(10),
+				reflect.ValueOf(64),
+			},
+			cobraVarPMethod: "UintVarP",
+		},
 		reflect.Uint64: {
 			envValueParseFunction: strconv.ParseUint,
 			args: []reflect.Value{
@@ -62,6 +71,14 @@ var (
 			},
 			cobraVarPMethod: "Uint8VarP",
 		},
+		reflect.Int: {
+			envValueParseFunction: strconv.ParseInt,
+			args: []reflect.Value{
+				reflect.ValueOf(10),
+				reflect.ValueOf(64),
+			},
+			cobraVarPMethod: "IntVarP",
+		},
 		reflect.Int64: {
 			envValueParseFunction: strconv.ParseInt,
 			args: []reflect.Value{
@@ -93,20 +110,6 @@ var (
 				reflect.ValueOf(8),
 			},
 			cobraVarPMethod: "Int8VarP",
-		},
-		reflect.Float64: {
-			envValueParseFunction: strconv.ParseFloat,
-			args: []reflect.Value{
-				reflect.ValueOf(64),
-			},
-			cobraVarPMethod: "Float64VarP",
-		},
-		reflect.Float32: {
-			envValueParseFunction: strconv.ParseFloat,
-			args: []reflect.Value{
-				reflect.ValueOf(32),
-			},
-			cobraVarPMethod: "Float32VarP",
 		},
 		reflect.Bool: {
 			envValueParseFunction: strconv.ParseBool,
@@ -150,150 +153,6 @@ func (args *Args) Execute() error {
 // Help prints out the help for the command.
 func (args *Args) Help() error {
 	return args.cmd.Help()
-}
-
-// StringVarP reads a string argument from the command line arguments or the
-// program's environment. defaultValue is used if none is present.
-func (args *Args) StringVarP(p *string, name, shorthand string, envKey string, defaultValue string, usage string) {
-	envValue, ok := os.LookupEnv(envKey)
-	if !ok {
-		envValue = defaultValue
-	}
-
-	args.cmd.Flags().StringVarP(p, name, shorthand, envValue, usage)
-}
-
-// Uint64VarP reads a uint64 argument from the command line arguments or the
-// program's environment. defaultValue is used if none is present or an invalid
-// value is present in the environment.
-func (args *Args) Uint64VarP(p *uint64, name, shorthand string, envKey string, defaultValue uint64, usage string) {
-	var envValue uint64
-	envStrValue, ok := os.LookupEnv(envKey)
-	if !ok {
-		envValue = defaultValue
-	} else {
-		parsedValue, err := strconv.ParseUint(envStrValue, 10, 64)
-		if err == nil {
-			envValue = parsedValue
-		} else {
-			envValue = defaultValue
-		}
-	}
-	args.cmd.Flags().Uint64VarP(p, name, shorthand, envValue, usage)
-}
-
-// Uint32VarP reads a uint32 argument from the command line arguments or the
-// program's environment. defaultValue is used if none is present or an invalid
-// value is present in the environment.
-func (args *Args) Uint32VarP(p *uint32, name, shorthand string, envKey string, defaultValue uint32, usage string) {
-	var envValue uint32
-	envStrValue, ok := os.LookupEnv(envKey)
-	if !ok {
-		envValue = defaultValue
-	} else {
-		parsedValue, err := strconv.ParseUint(envStrValue, 10, 32)
-		if err == nil {
-			envValue = uint32(parsedValue)
-		} else {
-			envValue = defaultValue
-		}
-	}
-	args.cmd.Flags().Uint32VarP(p, name, shorthand, envValue, usage)
-}
-
-// Uint16VarP reads a uint16 argument from the command line arguments or the
-// program's environment. defaultValue is used if none is present or an invalid
-// value is present in the environment.
-func (args *Args) Uint16VarP(p *uint16, name, shorthand string, envKey string, defaultValue uint16, usage string) {
-	var envValue uint16
-	envStrValue, ok := os.LookupEnv(envKey)
-	if !ok {
-		envValue = defaultValue
-	} else {
-		parsedValue, err := strconv.ParseUint(envStrValue, 10, 16)
-		if err == nil {
-			envValue = uint16(parsedValue)
-		} else {
-			envValue = defaultValue
-		}
-	}
-	args.cmd.Flags().Uint16VarP(p, name, shorthand, envValue, usage)
-}
-
-// Int64VarP reads a int64 argument from the command line arguments or the
-// program's environment. defaultValue is used if none is present or an invalid
-// value is present in the environment.
-func (args *Args) Int64VarP(p *int64, name, shorthand string, envKey string, defaultValue int64, usage string) {
-	var envValue int64
-	envStrValue, ok := os.LookupEnv(envKey)
-	if !ok {
-		envValue = defaultValue
-	} else {
-		parsedValue, err := strconv.ParseInt(envStrValue, 10, 64)
-		if err == nil {
-			envValue = parsedValue
-		} else {
-			envValue = defaultValue
-		}
-	}
-	args.cmd.Flags().Int64VarP(p, name, shorthand, envValue, usage)
-}
-
-// Int32VarP reads a int32 argument from the command line arguments or the
-// program's environment. defaultValue is used if none is present or an invalid
-// value is present in the environment.
-func (args *Args) Int32VarP(p *int32, name, shorthand string, envKey string, defaultValue int32, usage string) {
-	var envValue int32
-	envStrValue, ok := os.LookupEnv(envKey)
-	if !ok {
-		envValue = defaultValue
-	} else {
-		parsedValue, err := strconv.ParseInt(envStrValue, 10, 32)
-		if err == nil {
-			envValue = int32(parsedValue)
-		} else {
-			envValue = defaultValue
-		}
-	}
-	args.cmd.Flags().Int32VarP(p, name, shorthand, envValue, usage)
-}
-
-// Int16VarP reads a int16 argument from the command line arguments or the
-// program's environment. defaultValue is used if none is present or an invalid
-// value is present in the environment.
-func (args *Args) Int16VarP(p *int16, name, shorthand string, envKey string, defaultValue int16, usage string) {
-	var envValue int16
-	envStrValue, ok := os.LookupEnv(envKey)
-	if !ok {
-		envValue = defaultValue
-	} else {
-		parsedValue, err := strconv.ParseInt(envStrValue, 10, 16)
-		if err == nil {
-			envValue = int16(parsedValue)
-		} else {
-			envValue = defaultValue
-		}
-	}
-	args.cmd.Flags().Int16VarP(p, name, shorthand, envValue, usage)
-}
-
-// BoolVarP reads a uint64 argument from the command line arguments or the
-// program's environment. defaultValue is used if none is present or an invalid
-// value is present in the environment.
-func (args *Args) BoolVarP(p *bool, name, shorthand string, envKey string, defaultValue bool, usage string) {
-	var envValue bool
-	envStrValue, ok := os.LookupEnv(envKey)
-	if !ok {
-		envValue = defaultValue
-	} else {
-		parsedValue, err := strconv.ParseBool(envStrValue)
-		if err == nil {
-			envValue = parsedValue
-		} else {
-			envValue = defaultValue
-		}
-	}
-	args.cmd.Flags().BoolVarP(p, name, shorthand, envValue, usage)
 }
 
 func (args *Args) SetVarP(destValue interface{}, name, shorthand, envKey string, defaultValue interface{}, usage string) error {
@@ -379,6 +238,8 @@ func readEnvVariable(envKey string, kind reflect.Kind, supportedType *supportedT
 // it makes an assumption about the type returned by the parse function.
 func castValue(value reflect.Value, kind reflect.Kind) interface{} {
 	switch kind {
+	case reflect.Int:
+		return int(value.Interface().(int64))
 	case reflect.Int64:
 		return value.Interface().(int64)
 	case reflect.Int32:
@@ -387,6 +248,8 @@ func castValue(value reflect.Value, kind reflect.Kind) interface{} {
 		return int16(value.Interface().(int64))
 	case reflect.Int8:
 		return int8(value.Interface().(int64))
+	case reflect.Uint:
+		return uint(value.Interface().(uint64))
 	case reflect.Uint64:
 		return value.Interface().(uint64)
 	case reflect.Uint32:
@@ -395,10 +258,6 @@ func castValue(value reflect.Value, kind reflect.Kind) interface{} {
 		return uint16(value.Interface().(uint64))
 	case reflect.Uint8:
 		return uint8(value.Interface().(uint64))
-	case reflect.Float64:
-		return value.Interface().(float64)
-	case reflect.Float32:
-		return float32(value.Interface().(float64))
 	case reflect.Bool:
 		return value.Interface().(bool)
 	case reflect.String:
@@ -411,6 +270,8 @@ func (args *Args) SetArgs(newArgs []string) {
 	args.cmd.SetArgs(newArgs)
 }
 
+// echoString returns the input input string and a nil error. The signature is based ParseInt, ParseUint, etc... which
+// are called using reflection.
 func echoString(value string) (string, error) {
 	return value, nil
 }
