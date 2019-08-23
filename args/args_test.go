@@ -359,6 +359,50 @@ func TestArgs_ExecuteEnvironment(t *testing.T) {
 }
 
 // Test environment variables
+func TestArgs_ExecuteEnvironmentInvalidEnv(t *testing.T) {
+	functionExecuted := false
+	argValues := &argumentValues{}
+	ClearEnvironment()
+
+	_ = os.Setenv(stringEnvVar, stringArg)
+	_ = os.Setenv(uintEnvVar, "invalid"+strconv.FormatUint(uint64(uintArg), 10))
+	_ = os.Setenv(uint64EnvVar, "invalid"+strconv.FormatUint(uint64Arg, 10))
+	_ = os.Setenv(uint32EnvVar, "invalid"+strconv.FormatUint(uint64(uint32Arg), 10))
+	_ = os.Setenv(uint16EnvVar, "invalid"+strconv.FormatUint(uint64(uint16Arg), 10))
+	_ = os.Setenv(uint8EnvVar, "invalid"+strconv.FormatUint(uint64(uint8Arg), 10))
+	_ = os.Setenv(intEnvVar, "invalid"+strconv.FormatInt(int64(intArg), 10))
+	_ = os.Setenv(int64EnvVar, "invalid"+strconv.FormatInt(int64Arg, 10))
+	_ = os.Setenv(int32EnvVar, "invalid"+strconv.FormatInt(int64(int32Arg), 10))
+	_ = os.Setenv(int16EnvVar, "invalid"+strconv.FormatInt(int64(int16Arg), 10))
+	_ = os.Setenv(int8EnvVar, "invalid"+strconv.FormatInt(int64(int8Arg), 10))
+	_ = os.Setenv(boolEnvVar, "invalid"+strconv.FormatBool(boolArg))
+
+	arguments := NewArgs("use", "short", func(strings []string) error {
+		functionExecuted = true
+		return nil
+	})
+	setupArgs(arguments, argValues)
+	arguments.SetArgs([]string{})
+
+	err := arguments.Execute()
+
+	assert.Equal(t, stringArg, argValues.stringArg)
+	assert.Equal(t, defaultUintArg, argValues.uintArg)
+	assert.Equal(t, defaultUint64Arg, argValues.uInt64Arg)
+	assert.Equal(t, defaultUint32Arg, argValues.uInt32Arg)
+	assert.Equal(t, defaultUint16Arg, argValues.uInt16Arg)
+	assert.Equal(t, defaultUint8Arg, argValues.uInt8Arg)
+	assert.Equal(t, defaultIntArg, argValues.intArg)
+	assert.Equal(t, defaultInt64Arg, argValues.int64Arg)
+	assert.Equal(t, defaultInt32Arg, argValues.int32Arg)
+	assert.Equal(t, defaultInt16Arg, argValues.int16Arg)
+	assert.Equal(t, defaultInt8Arg, argValues.int8Arg)
+	assert.Equal(t, defaultBoolArg, argValues.booleanArg)
+	assert.Nil(t, err)
+	assert.True(t, functionExecuted)
+}
+
+// Test environment variables
 func TestArgs_ExecuteDefaultValues(t *testing.T) {
 	functionExecuted := false
 	argValues := &argumentValues{}
@@ -501,6 +545,47 @@ func TestReadEnvVariable_AllTypes(t *testing.T) {
 			assert.Nil(t, err, "Idx=%d: %+v", envTestDataRecordIdx, envTestDataRecord)
 		}
 	}
+}
+
+func TestSetVarP_NotPointer(t *testing.T) {
+	arguments := NewArgs("use", "short", func(strings []string) error {
+		return nil
+	})
+
+	var destValue int
+	var defaultValue int
+
+	err := arguments.SetVarP(destValue, "arg", "a", "ENV_KEY", defaultValue, "usage")
+
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "must be a pointer")
+}
+
+func TestSetVarP_InvalidType(t *testing.T) {
+	arguments := NewArgs("use", "short", func(strings []string) error {
+		return nil
+	})
+
+	var destValue float32
+	var defaultValue float32
+
+	err := arguments.SetVarP(&destValue, "arg", "a", "ENV_KEY", defaultValue, "usage")
+
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "type not supported")
+}
+
+func TestSetVarP_NullDestValue(t *testing.T) {
+	arguments := NewArgs("use", "short", func(strings []string) error {
+		return nil
+	})
+
+	var defaultValue float32
+
+	err := arguments.SetVarP(nil, "arg", "a", "ENV_KEY", defaultValue, "usage")
+
+	assert.NotNil(t, err)
+	assert.Contains(t, err.Error(), "must not be nil")
 }
 
 func setupArgs(arguments *Args, argValues *argumentValues) {

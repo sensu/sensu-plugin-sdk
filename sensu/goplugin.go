@@ -101,39 +101,9 @@ func (goPlugin *basePlugin) setupArguments() error {
 			return fmt.Errorf("Option value must not be nil for %s", option.Argument)
 		}
 
-		switch (option.Value).(type) {
-		case *string:
-			valuePtr, _ := option.Value.(*string)
-			goPlugin.cmdArgs.StringVarP(valuePtr, option.Argument, option.Shorthand, option.Env,
-				option.Default.(string), option.Usage)
-		case *uint64:
-			valuePtr, _ := option.Value.(*uint64)
-			goPlugin.cmdArgs.Uint64VarP(valuePtr, option.Argument, option.Shorthand, option.Env,
-				option.Default.(uint64), option.Usage)
-		case *uint32:
-			valuePtr, _ := option.Value.(*uint32)
-			goPlugin.cmdArgs.Uint32VarP(valuePtr, option.Argument, option.Shorthand, option.Env,
-				option.Default.(uint32), option.Usage)
-		case *uint16:
-			valuePtr, _ := option.Value.(*uint16)
-			goPlugin.cmdArgs.Uint16VarP(valuePtr, option.Argument, option.Shorthand, option.Env,
-				option.Default.(uint16), option.Usage)
-		case *int64:
-			valuePtr, _ := option.Value.(*int64)
-			goPlugin.cmdArgs.Int64VarP(valuePtr, option.Argument, option.Shorthand, option.Env,
-				option.Default.(int64), option.Usage)
-		case *int32:
-			valuePtr, _ := option.Value.(*int32)
-			goPlugin.cmdArgs.Int32VarP(valuePtr, option.Argument, option.Shorthand, option.Env,
-				option.Default.(int32), option.Usage)
-		case *int16:
-			valuePtr, _ := option.Value.(*int16)
-			goPlugin.cmdArgs.Int16VarP(valuePtr, option.Argument, option.Shorthand, option.Env,
-				option.Default.(int16), option.Usage)
-		case *bool:
-			valuePtr, _ := option.Value.(*bool)
-			goPlugin.cmdArgs.BoolVarP(valuePtr, option.Argument, option.Shorthand, option.Env,
-				option.Default.(bool), option.Usage)
+		err := goPlugin.cmdArgs.SetVarP(option.Value, option.Argument, option.Shorthand, option.Env, option.Default, option.Usage)
+		if err != nil {
+			return fmt.Errorf("error setting up arguments: %s", err)
 		}
 	}
 
