@@ -25,6 +25,7 @@ type Args struct {
 type supportedType struct {
 	envValueParseFunction interface{}
 	args                  []reflect.Value
+	cobraVarPMethod       string
 }
 
 var (
@@ -35,6 +36,7 @@ var (
 				reflect.ValueOf(10),
 				reflect.ValueOf(64),
 			},
+			cobraVarPMethod: "Uint64VarP",
 		},
 		reflect.Uint32: {
 			envValueParseFunction: strconv.ParseUint,
@@ -42,6 +44,7 @@ var (
 				reflect.ValueOf(10),
 				reflect.ValueOf(32),
 			},
+			cobraVarPMethod: "Uint32VarP",
 		},
 		reflect.Uint16: {
 			envValueParseFunction: strconv.ParseUint,
@@ -49,6 +52,7 @@ var (
 				reflect.ValueOf(10),
 				reflect.ValueOf(16),
 			},
+			cobraVarPMethod: "Uint16VarP",
 		},
 		reflect.Uint8: {
 			envValueParseFunction: strconv.ParseUint,
@@ -56,6 +60,7 @@ var (
 				reflect.ValueOf(10),
 				reflect.ValueOf(8),
 			},
+			cobraVarPMethod: "Uint8VarP",
 		},
 		reflect.Int64: {
 			envValueParseFunction: strconv.ParseInt,
@@ -63,6 +68,7 @@ var (
 				reflect.ValueOf(10),
 				reflect.ValueOf(64),
 			},
+			cobraVarPMethod: "Int64VarP",
 		},
 		reflect.Int32: {
 			envValueParseFunction: strconv.ParseInt,
@@ -70,6 +76,7 @@ var (
 				reflect.ValueOf(10),
 				reflect.ValueOf(32),
 			},
+			cobraVarPMethod: "Int32VarP",
 		},
 		reflect.Int16: {
 			envValueParseFunction: strconv.ParseInt,
@@ -77,6 +84,7 @@ var (
 				reflect.ValueOf(10),
 				reflect.ValueOf(16),
 			},
+			cobraVarPMethod: "Int16VarP",
 		},
 		reflect.Int8: {
 			envValueParseFunction: strconv.ParseInt,
@@ -84,26 +92,31 @@ var (
 				reflect.ValueOf(10),
 				reflect.ValueOf(8),
 			},
+			cobraVarPMethod: "Int8VarP",
 		},
 		reflect.Float64: {
 			envValueParseFunction: strconv.ParseFloat,
 			args: []reflect.Value{
 				reflect.ValueOf(64),
 			},
+			cobraVarPMethod: "Float64VarP",
 		},
 		reflect.Float32: {
 			envValueParseFunction: strconv.ParseFloat,
 			args: []reflect.Value{
 				reflect.ValueOf(32),
 			},
+			cobraVarPMethod: "Float32VarP",
 		},
 		reflect.Bool: {
 			envValueParseFunction: strconv.ParseBool,
 			args:                  []reflect.Value{},
+			cobraVarPMethod:       "BoolVarP",
 		},
 		reflect.String: {
-			envValueParseFunction: nil,
+			envValueParseFunction: echoString,
 			args:                  nil,
+			cobraVarPMethod:       "StringVarP",
 		},
 	}
 )
@@ -294,19 +307,39 @@ func (args *Args) SetVarP(destValue interface{}, name, shorthand, envKey string,
 	if interfaceKind == reflect.Ptr {
 		element := interfaceType.Elem()
 		elementKind := element.Kind()
-		conversionFunction := supportedArgumentKinds[elementKind]
+		argumentForKind := supportedArgumentKinds[elementKind]
 
-		log.Printf("Type: %v", conversionFunction)
+		log.Printf("Type: %v", argumentForKind)
 
-		if conversionFunction != nil {
+		if argumentForKind != nil {
+			value := defaultValue
 
-			value, err := readEnvVariable(envKey, elementKind, conversionFunction)
+			// Check for the content of an environment variable is necessary
+			if len(envKey) > 0 {
+				envValue, err := readEnvVariable(envKey, elementKind, argumentForKind)
 
-			if err != nil {
-				log.Printf("there is an error: %s", err)
-			} else {
-				log.Printf("Returned value: %d", value)
+				if err != nil {
+					log.Printf("there is an error: %s", err)
+					return err
+				} else {
+					log.Printf("Returned value: %v", envValue)
+					if envValue != nil {
+						value = envValue
+					}
+				}
 			}
+
+			// Call the Cobra function. Ex:
+			// 	 args.cmd.Flags().TypeVarP(destValue, name, shorthand, envValue, usage)
+			arguments := []reflect.Value{
+				reflect.ValueOf(destValue),
+				reflect.ValueOf(name),
+				reflect.ValueOf(shorthand),
+				reflect.ValueOf(value),
+				reflect.ValueOf(usage),
+			}
+
+			_ = reflect.ValueOf(args.cmd.Flags()).MethodByName(argumentForKind.cobraVarPMethod).Call(arguments)
 		} else {
 			return fmt.Errorf("destValue type not supported: %s", interfaceType)
 		}
@@ -321,7 +354,7 @@ func readEnvVariable(envKey string, kind reflect.Kind, supportedType *supportedT
 
 	envValue, found := os.LookupEnv(envKey)
 	if !found {
-		return reflect.ValueOf(nil), nil
+		return nil, nil
 	}
 
 	function := reflect.ValueOf(supportedType.envValueParseFunction)
@@ -376,4 +409,8 @@ func castValue(value reflect.Value, kind reflect.Kind) interface{} {
 
 func (args *Args) SetArgs(newArgs []string) {
 	args.cmd.SetArgs(newArgs)
+}
+
+func echoString(value string) (string, error) {
+	return value, nil
 }

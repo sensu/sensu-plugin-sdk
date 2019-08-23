@@ -125,6 +125,17 @@ var (
 		{reflect.Uint64, "214748364999999989999", nil, true},
 		{reflect.Uint64, "", nil, true},
 		{reflect.Uint64, "abcde", nil, true},
+
+		{reflect.Bool, "true", true, false},
+		{reflect.Bool, "false", false, false},
+		{reflect.Bool, "0", false, false},
+		{reflect.Bool, "1", true, false},
+		{reflect.Bool, "1333", nil, true},
+		{reflect.Bool, "", nil, true},
+		{reflect.Bool, "nottrue", nil, true},
+
+		{reflect.String, "a string", "a string", false},
+		{reflect.String, "", "", false},
 	}
 )
 
@@ -173,6 +184,41 @@ func TestArgs_NewArgs(t *testing.T) {
 
 // Test short command-line arguments
 func TestArgs_ExecuteShort(t *testing.T) {
+	functionExecuted := false
+	argValues := &argumentValues{}
+	ClearEnvironment()
+
+	arguments := NewArgs("use", "short", func(strings []string) error {
+		functionExecuted = true
+		return nil
+	})
+	setupArgs(arguments, argValues)
+	arguments.SetArgs([]string{
+		"-s", stringArg,
+		"-i", strconv.FormatUint(uint64Arg, 10),
+		"-j", strconv.FormatUint(uint64(uint32Arg), 10),
+		"-k", strconv.FormatUint(uint64(uint16Arg), 10),
+		"-l", strconv.FormatInt(int64Arg, 10),
+		"-m", strconv.FormatInt(int64(int32Arg), 10),
+		"-n", strconv.FormatInt(int64(int16Arg), 10),
+		"-b", strconv.FormatBool(boolArg),
+	})
+
+	err := arguments.Execute()
+
+	assert.Equal(t, stringArg, argValues.stringArg)
+	assert.Equal(t, uint64Arg, argValues.uInt64Arg)
+	assert.Equal(t, uint32Arg, argValues.uInt32Arg)
+	assert.Equal(t, uint16Arg, argValues.uInt16Arg)
+	assert.Equal(t, int64Arg, argValues.int64Arg)
+	assert.Equal(t, int32Arg, argValues.int32Arg)
+	assert.Equal(t, int16Arg, argValues.int16Arg)
+	assert.Equal(t, boolArg, argValues.booleanArg)
+	assert.Nil(t, err)
+	assert.True(t, functionExecuted)
+}
+
+func TestArgs_ExecuteShort2(t *testing.T) {
 	functionExecuted := false
 	argValues := &argumentValues{}
 	ClearEnvironment()
@@ -445,7 +491,7 @@ func TestTypeOf(t *testing.T) {
 	}
 }
 
-func TestReadEnvVariable_Int32Loop(t *testing.T) {
+func TestReadEnvVariable_AllTypes(t *testing.T) {
 	for envTestDataRecordIdx, envTestDataRecord := range envTestDataRecords {
 		log.Printf("Processing record %2d: %+v\n", envTestDataRecordIdx, envTestDataRecord)
 
@@ -466,7 +512,7 @@ func TestReadEnvVariable_Int32Loop(t *testing.T) {
 	}
 }
 
-func setupArgs(arguments *Args, argValues *argumentValues) {
+func setupArgsOld(arguments *Args, argValues *argumentValues) {
 	arguments.StringVarP(&argValues.stringArg, "str", "s", "ENV_STR", defaultStringArg, "Use str")
 	arguments.Uint64VarP(&argValues.uInt64Arg, "uint64", "i", uint64EnvVar, defaultUint64Arg, "Use uint64")
 	arguments.Uint32VarP(&argValues.uInt32Arg, "uint32", "j", uint32EnvVar, defaultUint32Arg, "Use uint32")
@@ -475,6 +521,17 @@ func setupArgs(arguments *Args, argValues *argumentValues) {
 	arguments.Int32VarP(&argValues.int32Arg, "int32", "m", int32EnvVar, defaultInt32Arg, "Use int32")
 	arguments.Int16VarP(&argValues.int16Arg, "int16", "n", int16EnvVar, defaultInt16Arg, "Use int16")
 	arguments.BoolVarP(&argValues.booleanArg, "bool", "b", "ENV_BOOL", defaultBoolArg, "Use bool")
+}
+
+func setupArgs(arguments *Args, argValues *argumentValues) {
+	_ = arguments.SetVarP(&argValues.stringArg, "str", "s", "ENV_STR", defaultStringArg, "Use str")
+	_ = arguments.SetVarP(&argValues.uInt64Arg, "uint64", "i", uint64EnvVar, defaultUint64Arg, "Use uint64")
+	_ = arguments.SetVarP(&argValues.uInt32Arg, "uint32", "j", uint32EnvVar, defaultUint32Arg, "Use uint32")
+	_ = arguments.SetVarP(&argValues.uInt16Arg, "uint16", "k", uint16EnvVar, defaultUint16Arg, "Use uint16")
+	_ = arguments.SetVarP(&argValues.int64Arg, "int64", "l", int64EnvVar, defaultInt64Arg, "Use int64")
+	_ = arguments.SetVarP(&argValues.int32Arg, "int32", "m", int32EnvVar, defaultInt32Arg, "Use int32")
+	_ = arguments.SetVarP(&argValues.int16Arg, "int16", "n", int16EnvVar, defaultInt16Arg, "Use int16")
+	_ = arguments.SetVarP(&argValues.booleanArg, "bool", "b", "ENV_BOOL", defaultBoolArg, "Use bool")
 }
 
 func ClearEnvironment() {
