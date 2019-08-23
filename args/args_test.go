@@ -360,13 +360,13 @@ func TestArgs_ExecuteArgsAndEnvironment(t *testing.T) {
 	ClearEnvironment()
 
 	_ = os.Setenv(stringEnvVar, "env"+stringArg)
-	_ = os.Setenv(uint64EnvVar, "env"+strconv.FormatUint(uint64Arg, 10))
-	_ = os.Setenv(uint32EnvVar, "env"+strconv.FormatUint(uint64(uint32Arg), 10))
-	_ = os.Setenv(uint16EnvVar, "env"+strconv.FormatUint(uint64(uint16Arg), 10))
-	_ = os.Setenv(int64EnvVar, "env"+strconv.FormatInt(int64Arg, 10))
-	_ = os.Setenv(int32EnvVar, "env"+strconv.FormatInt(int64(int32Arg), 10))
-	_ = os.Setenv(int16EnvVar, "env"+strconv.FormatInt(int64(int16Arg), 10))
-	_ = os.Setenv(boolEnvVar, "env"+strconv.FormatBool(boolArg))
+	_ = os.Setenv(uint64EnvVar, strconv.FormatUint(uint64Arg - 10, 10))
+	_ = os.Setenv(uint32EnvVar, strconv.FormatUint(uint64(uint32Arg -10), 10))
+	_ = os.Setenv(uint16EnvVar, strconv.FormatUint(uint64(uint16Arg -10), 10))
+	_ = os.Setenv(int64EnvVar, strconv.FormatInt(int64Arg + 10, 10))
+	_ = os.Setenv(int32EnvVar, strconv.FormatInt(int64(int32Arg + 10), 10))
+	_ = os.Setenv(int16EnvVar, strconv.FormatInt(int64(int16Arg + 10), 10))
+	_ = os.Setenv(boolEnvVar, strconv.FormatBool(!boolArg))
 
 	arguments := NewArgs("use", "short", func(strings []string) error {
 		functionExecuted = true

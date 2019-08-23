@@ -319,10 +319,10 @@ func (args *Args) SetVarP(destValue interface{}, name, shorthand, envKey string,
 				envValue, err := readEnvVariable(envKey, elementKind, argumentForKind)
 
 				if err != nil {
-					log.Printf("there is an error: %s", err)
-					return err
+					// Log the error and ignore the environment variable
+					log.Printf("Error reading environment variable %s, ignoring: %s", envKey, err)
 				} else {
-					log.Printf("Returned value: %v", envValue)
+					log.Printf("Environment variable read: %s", envKey)
 					if envValue != nil {
 						value = envValue
 					}
