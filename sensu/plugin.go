@@ -49,7 +49,6 @@ type basePlugin struct {
 	pluginExecuteFunction  func([]string) (int, error)
 	cmdArgs                *args.Args
 	readEvent              bool
-	stdin                  bool
 	configurationOverrides bool
 	exitStatus             int
 	errorExitStatus        int
@@ -60,12 +59,7 @@ type basePlugin struct {
 func (plugin *basePlugin) readSensuEvent() error {
 	eventJSON, err := ioutil.ReadAll(plugin.eventReader)
 	if err != nil {
-		if plugin.stdin {
-			return fmt.Errorf("Failed to read STDIN: %s", err)
-		} else {
-			// if event is not mandatory return without going any further
-			return nil
-		}
+		return fmt.Errorf("Failed to read STDIN: %s", err)
 	}
 
 	sensuEvent := &types.Event{}
