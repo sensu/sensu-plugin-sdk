@@ -47,7 +47,7 @@ type basePlugin struct {
 	options                []*PluginConfigOption
 	sensuEvent             *types.Event
 	eventReader            io.Reader
-	pluginWorkflowFunction func([]string) (int, error)
+	pluginExecuteFunction  func([]string) (int, error)
 	cmdArgs                *args.Args
 	readEvent              bool
 	eventMandatory         bool
@@ -117,7 +117,7 @@ func (plugin *basePlugin) setupArguments() error {
 }
 
 // cobraExecuteFunction is called by the argument's execute. The configuration overrides will be processed if necessary
-// and the pluginWorkflowFunction function executed
+// and the pluginExecuteFunction function executed
 func (plugin *basePlugin) cobraExecuteFunction(args []string) error {
 	// Read the Sensu event if required
 	if plugin.readEvent {
@@ -137,7 +137,7 @@ func (plugin *basePlugin) cobraExecuteFunction(args []string) error {
 		}
 	}
 
-	exitStatus, err := plugin.pluginWorkflowFunction(args)
+	exitStatus, err := plugin.pluginExecuteFunction(args)
 	if err != nil {
 		fmt.Printf("Error executing plugin: %s", err)
 	}
@@ -159,7 +159,7 @@ func (plugin *basePlugin) Execute() {
 		plugin.exitFunction(plugin.errorExitStatus)
 	}
 
-	// This will call the pluginWorkflowFunction function which implements the custom logic for that type of plugin.
+	// This will call the pluginExecuteFunction function which implements the custom logic for that type of plugin.
 	err = plugin.cmdArgs.Execute()
 	if err != nil {
 		plugin.errorLogFunction("Error executing %s: %v\n", plugin.config.Name, err)

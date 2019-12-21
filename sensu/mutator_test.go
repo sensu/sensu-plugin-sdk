@@ -55,10 +55,10 @@ var (
 	mutatorCmdLineArgs = []string{"--arg1", "value-arg1", "--arg2", "7531", "--arg3=false"}
 )
 
-func TestNewMutator(t *testing.T) {
+func TestInitMutator(t *testing.T) {
 	values := &mutatorValues{}
 	options := getMutatorVales(values)
-	mutator := NewMutator(&defaultMutatorConfig, options, func(event *types.Event) error {
+	mutator := InitMutator(&defaultMutatorConfig, options, func(event *types.Event) error {
 		return nil
 	}, func(event *types.Event) (*types.Event, error) {
 		return nil, nil
@@ -73,15 +73,15 @@ func TestNewMutator(t *testing.T) {
 	assert.NotNil(t, mutator.executeFunction)
 	assert.Nil(t, mutator.sensuEvent)
 	assert.Equal(t, os.Stdin, mutator.eventReader)
-	assert.NotNil(t, mutator.pluginWorkflowFunction)
+	assert.NotNil(t, mutator.pluginExecuteFunction)
 	assert.NotNil(t, mutator.cmdArgs)
 }
 
-func TestNewMutator_NoOptionValue(t *testing.T) {
+func TestInitMutator_NoOptionValue(t *testing.T) {
 	options := getMutatorVales(nil)
 	mutatorConfig := defaultMutatorConfig
 
-	mutator := NewMutator(&mutatorConfig, options,
+	mutator := InitMutator(&mutatorConfig, options,
 		func(event *types.Event) error {
 			return nil
 		}, func(event *types.Event) (*types.Event, error) {
@@ -105,7 +105,7 @@ func mutatorExecuteUtil(t *testing.T, mutatorConfig *PluginConfig, eventFile str
 	values := mutatorValues{}
 	options := getMutatorVales(&values)
 
-	mutator := NewMutator(mutatorConfig, options, validationFunction, executeFunction)
+	mutator := InitMutator(mutatorConfig, options, validationFunction, executeFunction)
 	if writer != nil {
 		mutator.out = writer
 	}

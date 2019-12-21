@@ -15,7 +15,7 @@ type Mutator struct {
 	executeFunction    func(event *types.Event) (*types.Event, error)
 }
 
-func NewMutator(config *PluginConfig, options []*PluginConfigOption,
+func InitMutator(config *PluginConfig, options []*PluginConfigOption,
 	validationFunction func(event *types.Event) error,
 	executeFunction func(event *types.Event) (*types.Event, error)) *Mutator {
 	mutator := &Mutator{
@@ -34,13 +34,13 @@ func NewMutator(config *PluginConfig, options []*PluginConfigOption,
 		validationFunction: validationFunction,
 		executeFunction:    executeFunction,
 	}
-	mutator.pluginWorkflowFunction = mutator.mutatorWorkflow
+	mutator.pluginExecuteFunction = mutator.execute
 	mutator.initPlugin()
 	return mutator
 }
 
-// Executes the handler's workflow
-func (mutator *Mutator) mutatorWorkflow(_ []string) (int, error) {
+// Executes the mutator
+func (mutator *Mutator) execute(_ []string) (int, error) {
 	// Validate input using validateFunction
 	err := mutator.validationFunction(mutator.sensuEvent)
 	if err != nil {

@@ -29,14 +29,14 @@ func InitHandler(config *PluginConfig, options []*PluginConfigOption,
 		executeFunction:    executeFunction,
 	}
 
-	handler.pluginWorkflowFunction = handler.handlerWorkflow
+	handler.pluginExecuteFunction = handler.execute
 	handler.initPlugin()
 
 	return handler
 }
 
-// Executes the handler's workflow
-func (handler *Handler) handlerWorkflow(_ []string) (int, error) {
+// Executes the handler
+func (handler *Handler) execute(_ []string) (int, error) {
 	// Validate input using validateFunction
 	err := handler.validationFunction(handler.sensuEvent)
 	if err != nil {
