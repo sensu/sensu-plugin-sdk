@@ -8,17 +8,17 @@ import (
 	"os"
 )
 
-type GoMutator struct {
+type Mutator struct {
 	basePlugin
 	out                io.Writer
 	validationFunction func(event *types.Event) error
 	executeFunction    func(event *types.Event) (*types.Event, error)
 }
 
-func NewGoMutator(config *PluginConfig, options []*PluginConfigOption,
+func NewMutator(config *PluginConfig, options []*PluginConfigOption,
 	validationFunction func(event *types.Event) error,
-	executeFunction func(event *types.Event) (*types.Event, error)) *GoMutator {
-	goMutator := &GoMutator{
+	executeFunction func(event *types.Event) (*types.Event, error)) *Mutator {
+	mutator := &Mutator{
 		basePlugin: basePlugin{
 			config:                 config,
 			options:                options,
@@ -34,21 +34,21 @@ func NewGoMutator(config *PluginConfig, options []*PluginConfigOption,
 		validationFunction: validationFunction,
 		executeFunction:    executeFunction,
 	}
-	goMutator.pluginWorkflowFunction = goMutator.goMutatorWorkflow
-	goMutator.initPlugin()
-	return goMutator
+	mutator.pluginWorkflowFunction = mutator.mutatorWorkflow
+	mutator.initPlugin()
+	return mutator
 }
 
 // Executes the handler's workflow
-func (goMutator *GoMutator) goMutatorWorkflow(_ []string) (int, error) {
+func (mutator *Mutator) mutatorWorkflow(_ []string) (int, error) {
 	// Validate input using validateFunction
-	err := goMutator.validationFunction(goMutator.sensuEvent)
+	err := mutator.validationFunction(mutator.sensuEvent)
 	if err != nil {
 		return 1, fmt.Errorf("error validating input: %s", err)
 	}
 
 	// Execute handler logic using executeFunction
-	event, err := goMutator.executeFunction(goMutator.sensuEvent)
+	event, err := mutator.executeFunction(mutator.sensuEvent)
 	if err != nil {
 		return 1, fmt.Errorf("error executing mutator: %s", err)
 	}
@@ -59,9 +59,9 @@ func (goMutator *GoMutator) goMutatorWorkflow(_ []string) (int, error) {
 			return 1, fmt.Errorf("error marshaling output event to json: %s", err)
 		}
 
-		_, _ = fmt.Fprintf(goMutator.out, "%s", string(eventBytes))
+		_, _ = fmt.Fprintf(mutator.out, "%s", string(eventBytes))
 	} else {
-		_, _ = fmt.Fprint(goMutator.out, "{}")
+		_, _ = fmt.Fprint(mutator.out, "{}")
 	}
 
 	return 0, err

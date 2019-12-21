@@ -6,15 +6,15 @@ import (
 	"os"
 )
 
-type GoHandler struct {
+type Handler struct {
 	basePlugin
 	validationFunction func(event *types.Event) error
 	executeFunction    func(event *types.Event) error
 }
 
-func NewGoHandler(config *PluginConfig, options []*PluginConfigOption,
-	validationFunction func(event *types.Event) error, executeFunction func(event *types.Event) error) *GoHandler {
-	goHandler := &GoHandler{
+func InitHandler(config *PluginConfig, options []*PluginConfigOption,
+	validationFunction func(event *types.Event) error, executeFunction func(event *types.Event) error) *Handler {
+	handler := &Handler{
 		basePlugin: basePlugin{
 			config:                 config,
 			options:                options,
@@ -29,22 +29,22 @@ func NewGoHandler(config *PluginConfig, options []*PluginConfigOption,
 		executeFunction:    executeFunction,
 	}
 
-	goHandler.pluginWorkflowFunction = goHandler.goHandlerWorkflow
-	goHandler.initPlugin()
+	handler.pluginWorkflowFunction = handler.handlerWorkflow
+	handler.initPlugin()
 
-	return goHandler
+	return handler
 }
 
 // Executes the handler's workflow
-func (goHandler *GoHandler) goHandlerWorkflow(_ []string) (int, error) {
+func (handler *Handler) handlerWorkflow(_ []string) (int, error) {
 	// Validate input using validateFunction
-	err := goHandler.validationFunction(goHandler.sensuEvent)
+	err := handler.validationFunction(handler.sensuEvent)
 	if err != nil {
 		return 1, fmt.Errorf("error validating input: %s", err)
 	}
 
 	// Execute handler logic using executeFunction
-	err = goHandler.executeFunction(goHandler.sensuEvent)
+	err = handler.executeFunction(handler.sensuEvent)
 	if err != nil {
 		return 1, fmt.Errorf("error executing handler: %s", err)
 	}

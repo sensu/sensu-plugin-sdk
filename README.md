@@ -24,7 +24,7 @@ var config = Config{
     Name:     "sensu-go-plugin",
     Short:    "Performs my incredible logic",
     Timeout:  10,
-    Keyspace: "sensu.io/plugins/mysensugoplugin/config",
+    Keyspace: "sensu.io/plugins/mysensuplugin/config",
   },
 }
 ```
@@ -91,8 +91,8 @@ options, validation function and execution function.
 
 ```Go
 func main() {
-  goHandler := sensu.NewGoHandler(&config.HandlerConfig, options, validateInput, executeHandler)
-  err := goHandler.Execute()
+  handler := sensu.InitHandler(&config.HandlerConfig, options, validateInput, executeHandler)
+  err := handler.Execute()
 }
 
 ```
