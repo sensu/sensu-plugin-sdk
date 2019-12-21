@@ -38,7 +38,6 @@ type PluginConfig struct {
 	Short    string
 	Timeout  uint64
 	Keyspace string
-  Stdin    bool 
 }
 
 // basePlugin defines the basic configuration to be used by all plugin types.
@@ -50,7 +49,7 @@ type basePlugin struct {
 	pluginExecuteFunction  func([]string) (int, error)
 	cmdArgs                *args.Args
 	readEvent              bool
-	eventMandatory         bool
+	stdin                  bool
 	configurationOverrides bool
 	exitStatus             int
 	errorExitStatus        int
@@ -61,7 +60,7 @@ type basePlugin struct {
 func (plugin *basePlugin) readSensuEvent() error {
 	eventJSON, err := ioutil.ReadAll(plugin.eventReader)
 	if err != nil {
-		if plugin.eventMandatory {
+		if plugin.stdin {
 			return fmt.Errorf("Failed to read STDIN: %s", err)
 		} else {
 			// if event is not mandatory return without going any further
