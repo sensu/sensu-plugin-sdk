@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Added CHANGELOG.md
+
 - Added support for Check plugins
 
 ### Changed
@@ -15,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the purpose of the `basePlugin.readEvent` field (i.e. used to indicate whether
   the plugin should wait to read from stdin; this `bool` should always be `true`
   for Handler and Mutator plugins, but it is optional for Check plugins)
-  
+
 - Refactored plugin library to remove "Go" function and type name prefixes (i.e.
   "GoHandler" is now just "Handler")
 
