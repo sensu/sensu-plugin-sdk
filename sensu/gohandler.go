@@ -2,8 +2,9 @@ package sensu
 
 import (
 	"fmt"
-	"github.com/sensu/sensu-go/types"
 	"os"
+
+	"github.com/sensu/sensu-go/types"
 )
 
 type GoHandler struct {
