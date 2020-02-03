@@ -1,10 +1,11 @@
 package sensu
 
 import (
-	"github.com/stretchr/testify/assert"
 	"io"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSetOptionValue_String(t *testing.T) {
@@ -59,6 +60,14 @@ func TestSetOptionValue_FalseBool(t *testing.T) {
 	err := setOptionValue(&option, "false")
 	assert.Nil(t, err)
 	assert.Equal(t, false, finalValue)
+}
+
+func TestSetOptionValue_Int64(t *testing.T) {
+	var value int64
+	option := defaultOption1
+	option.Value = &value
+	assert.NoError(t, setOptionValue(&option, "42"))
+	assert.Equal(t, value, int64(42))
 }
 
 func TestSetOptionValue_InvalidBool(t *testing.T) {

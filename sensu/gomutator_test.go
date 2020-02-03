@@ -3,12 +3,13 @@ package sensu
 import (
 	"bytes"
 	"fmt"
-	"github.com/sensu/sensu-go/types"
-	"github.com/stretchr/testify/assert"
 	"io"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/sensu/sensu-go/types"
+	"github.com/stretchr/testify/assert"
 )
 
 type mutatorValues struct {
@@ -160,7 +161,6 @@ func TestGoMutator_Execute_Check(t *testing.T) {
 	assert.True(t, executeCalled)
 
 	output := writer.(*bytes.Buffer).String()
-	fmt.Printf("Output: %s", output)
 	assert.True(t, len(output) > 5)
 	assert.True(t, strings.Contains(output, newName))
 }
@@ -187,7 +187,6 @@ func TestGoMutator_Execute_Check_NilEvent(t *testing.T) {
 	assert.True(t, executeCalled)
 
 	output := writer.(*bytes.Buffer).String()
-	fmt.Printf("Output: %s", output)
 	assert.Equal(t, output, "{}")
 }
 

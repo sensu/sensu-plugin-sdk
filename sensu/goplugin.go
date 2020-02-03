@@ -4,14 +4,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/sensu/sensu-go/types"
-	"github.com/sensu/sensu-plugins-go-library/args"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"path"
-	"strconv"
+	"reflect"
+
+	"github.com/sensu/sensu-go/types"
+	"github.com/sensu/sensu-plugins-go-library/args"
 )
 
 // GoPlugin defines the GoPlugin interface to be implemented by all types of plugins
@@ -22,14 +23,32 @@ type GoPlugin interface {
 // PluginConfigOption defines an option to be read by the plugin on startup. An
 // option can be passed using a command line argument, an environment variable or
 // at for some plugin types using a configuration override from the Sensu event.
+//
+//
 type PluginConfigOption struct {
-	Value     interface{}
-	Path      string
-	Env       string
-	Argument  string      // command line argument
-	Shorthand string      // short command line argument
-	Default   interface{} // default value
-	Usage     string
+	// Value is the value to read the configured flag or environment variable into.
+	// Pass a pointer to any value in your plugin in order to fill it in with the
+	// data from a flag or environment variable. The parsing will be done with
+	// a function supplied by viper. (See ViperFunc)
+	Value interface{}
+
+	// Path is the path to the Sensu annotation to consult when parsing config.
+	Path string
+
+	// Env is the environment variable to consult when parsing config.
+	Env string
+
+	// Argument is the command line argument to consult when parsing config.
+	Argument string
+
+	// Shorthand is the shorthand command line argument to consult when parsing config.
+	Shorthand string
+
+	// Default is the default value of the config option.
+	Default interface{}
+
+	// Usage adds help context to the command-line flag.
+	Usage string
 }
 
 // PluginConfig defines the base plugin configuration.
@@ -175,33 +194,13 @@ func validateEvent(event *types.Event) error {
 	return event.Validate()
 }
 
-func setOptionValue(option *PluginConfigOption, valueStr string) error {
-	switch option.Value.(type) {
-	case *string:
-		strOptionValue, ok := option.Value.(*string)
-		if ok {
-			*strOptionValue = valueStr
-		}
-	case *uint64:
-		uint64OptionPtrValue, ok := option.Value.(*uint64)
-		if ok {
-			parsedValue, err := strconv.ParseUint(valueStr, 10, 64)
-			if err != nil {
-				return fmt.Errorf("Error parsing %s into a uint64 for option %s", valueStr, option.Argument)
-			}
-			*uint64OptionPtrValue = parsedValue
-		}
-	case *bool:
-		boolOptionPtrValue, ok := option.Value.(*bool)
-		if ok {
-			parsedValue, err := strconv.ParseBool(valueStr)
-			if err != nil {
-				return fmt.Errorf("Error parsing %s into a bool for option %s", valueStr, option.Argument)
-			}
-			*boolOptionPtrValue = parsedValue
-		}
+func setOptionValue(opt *PluginConfigOption, valueStr string) error {
+	optVal := reflect.Indirect(reflect.ValueOf(opt.Value))
+	if optVal.Type().Kind() == reflect.String {
+		optVal.Set(reflect.ValueOf(valueStr))
+		return nil
 	}
-	return nil
+	return json.Unmarshal([]byte(valueStr), &opt.Value)
 }
 
 func configurationOverrides(config *PluginConfig, options []*PluginConfigOption, event *types.Event) error {
