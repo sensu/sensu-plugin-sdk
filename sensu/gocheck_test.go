@@ -31,11 +31,11 @@ var (
 func TestNewGoCheck(t *testing.T) {
 	values := &checkValues{}
 	options := getCheckOptions(values)
-	goCheck := NewGoCheck(&defaultCheckConfig, options, func(event *types.Event) error {
-		return nil
-	}, func(event *types.Event) error {
-		return nil
-	})
+	goCheck := NewGoCheck(&defaultCheckConfig, options, func(_ *types.Event) (int, error) {
+		return 0, nil
+	}, func(_ *types.Event) (int, error) {
+		return 0, nil
+	}, false)
 
 	assert.NotNil(t, goCheck)
 	assert.NotNil(t, goCheck.options)
