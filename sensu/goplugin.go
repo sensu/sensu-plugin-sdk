@@ -11,8 +11,8 @@ import (
 	"path"
 	"reflect"
 
+	"github.com/sensu-community/sensu-plugin-sdk/version"
 	"github.com/sensu/sensu-go/types"
-	"github.com/sensu/sensu-plugin-sdk/version"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
