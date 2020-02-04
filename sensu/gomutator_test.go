@@ -3,12 +3,13 @@ package sensu
 import (
 	"bytes"
 	"fmt"
-	"github.com/sensu/sensu-go/types"
-	"github.com/stretchr/testify/assert"
 	"io"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/sensu/sensu-go/types"
+	"github.com/stretchr/testify/assert"
 )
 
 type mutatorValues struct {
@@ -74,7 +75,7 @@ func TestNewGoMutator(t *testing.T) {
 	assert.Nil(t, goMutator.sensuEvent)
 	assert.Equal(t, os.Stdin, goMutator.eventReader)
 	assert.NotNil(t, goMutator.pluginWorkflowFunction)
-	assert.NotNil(t, goMutator.cmdArgs)
+	assert.NotNil(t, goMutator.cmd)
 }
 
 func TestNewGoMutator_NoOptionValue(t *testing.T) {
@@ -111,10 +112,13 @@ func goMutatorExecuteUtil(t *testing.T, mutatorConfig *PluginConfig, eventFile s
 	}
 
 	if len(cmdLineArgs) > 0 {
-		goMutator.cmdArgs.SetArgs(cmdLineArgs)
+		goMutator.cmd.SetArgs(cmdLineArgs)
 	} else {
-		goMutator.cmdArgs.SetArgs([]string{})
+		goMutator.cmd.SetArgs([]string{})
 	}
+
+	goMutator.cmd.SilenceErrors = true
+	goMutator.cmd.SilenceUsage = true
 
 	// Replace stdin reader with file reader
 	var exitStatus = -99
@@ -160,7 +164,6 @@ func TestGoMutator_Execute_Check(t *testing.T) {
 	assert.True(t, executeCalled)
 
 	output := writer.(*bytes.Buffer).String()
-	fmt.Printf("Output: %s", output)
 	assert.True(t, len(output) > 5)
 	assert.True(t, strings.Contains(output, newName))
 }
@@ -187,7 +190,6 @@ func TestGoMutator_Execute_Check_NilEvent(t *testing.T) {
 	assert.True(t, executeCalled)
 
 	output := writer.(*bytes.Buffer).String()
-	fmt.Printf("Output: %s", output)
 	assert.Equal(t, output, "{}")
 }
 

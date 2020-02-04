@@ -2,11 +2,18 @@ package sensu
 
 import (
 	"fmt"
-	"github.com/sensu/sensu-go/types"
-	"github.com/stretchr/testify/assert"
+	"io/ioutil"
+	"log"
 	"os"
 	"testing"
+
+	"github.com/sensu/sensu-go/types"
+	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	log.SetOutput(ioutil.Discard)
+}
 
 type handlerValues struct {
 	arg1 string
@@ -94,6 +101,8 @@ func TestNewGoHandler_NoOptionValue(t *testing.T) {
 func goHandlerExecuteUtil(t *testing.T, handlerConfig *PluginConfig, eventFile string, cmdLineArgs []string,
 	validationFunction func(*types.Event) error, executeFunction func(*types.Event) error,
 	expectedValue1 interface{}, expectedValue2 interface{}, expectedValue3 interface{}) (int, string) {
+
+	t.Helper()
 	values := handlerValues{}
 	options := getHandlerOptions(&values)
 
@@ -101,10 +110,13 @@ func goHandlerExecuteUtil(t *testing.T, handlerConfig *PluginConfig, eventFile s
 
 	// Simulate the command line arguments if necessary
 	if len(cmdLineArgs) > 0 {
-		goHandler.cmdArgs.SetArgs(cmdLineArgs)
+		goHandler.cmd.SetArgs(cmdLineArgs)
 	} else {
-		goHandler.cmdArgs.SetArgs([]string{})
+		goHandler.cmd.SetArgs([]string{})
 	}
+
+	goHandler.cmd.SilenceErrors = true
+	goHandler.cmd.SilenceUsage = true
 
 	// Replace stdin reader with file reader and exitFunction with our own so we can know the exit status
 	var exitStatus int
