@@ -24,13 +24,12 @@ type GoPlugin interface {
 // PluginConfigOption defines an option to be read by the plugin on startup. An
 // option can be passed using a command line argument, an environment variable or
 // at for some plugin types using a configuration override from the Sensu event.
-//
-//
 type PluginConfigOption struct {
 	// Value is the value to read the configured flag or environment variable into.
 	// Pass a pointer to any value in your plugin in order to fill it in with the
 	// data from a flag or environment variable. The parsing will be done with
-	// a function supplied by viper. (See ViperFunc)
+	// a function supplied by viper. See the viper documentation for details on
+	// how various data types are parsed.
 	Value interface{}
 
 	// Path is the path to the Sensu annotation to consult when parsing config.
