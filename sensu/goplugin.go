@@ -12,6 +12,7 @@ import (
 	"reflect"
 
 	"github.com/sensu/sensu-go/types"
+	"github.com/sensu/sensu-plugins-go-library/version"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -116,6 +117,15 @@ func (p *basePlugin) initPlugin() error {
 	p.errorLogFunction = func(format string, a ...interface{}) {
 		_, _ = fmt.Fprintf(os.Stderr, format, a)
 	}
+
+	p.cmd.AddCommand(&cobra.Command{
+		Use:   "version",
+		Short: "Print the version number of this plugin",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println(version.Version())
+		},
+	})
+
 	return p.setupFlags(p.cmd)
 }
 
