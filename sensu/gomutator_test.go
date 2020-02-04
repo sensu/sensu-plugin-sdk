@@ -75,7 +75,7 @@ func TestNewGoMutator(t *testing.T) {
 	assert.Nil(t, goMutator.sensuEvent)
 	assert.Equal(t, os.Stdin, goMutator.eventReader)
 	assert.NotNil(t, goMutator.pluginWorkflowFunction)
-	assert.NotNil(t, goMutator.cmdArgs)
+	assert.NotNil(t, goMutator.cmd)
 }
 
 func TestNewGoMutator_NoOptionValue(t *testing.T) {
@@ -112,10 +112,13 @@ func goMutatorExecuteUtil(t *testing.T, mutatorConfig *PluginConfig, eventFile s
 	}
 
 	if len(cmdLineArgs) > 0 {
-		goMutator.cmdArgs.SetArgs(cmdLineArgs)
+		goMutator.cmd.SetArgs(cmdLineArgs)
 	} else {
-		goMutator.cmdArgs.SetArgs([]string{})
+		goMutator.cmd.SetArgs([]string{})
 	}
+
+	goMutator.cmd.SilenceErrors = true
+	goMutator.cmd.SilenceUsage = true
 
 	// Replace stdin reader with file reader
 	var exitStatus = -99
