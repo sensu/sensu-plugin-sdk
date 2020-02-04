@@ -21,15 +21,15 @@ type GoCheck struct {
 }
 
 func NewGoCheck(config *PluginConfig, options []*PluginConfigOption,
-	validationFunction func(event *types.Event) (int, error),
-	executeFunction func(event *types.Event) (int, error)) *GoCheck {
+	validationFunction func(*types.Event) (int, error),
+	executeFunction func(*types.Event) (int, error), readEvent bool) *GoCheck {
 	check := &GoCheck{
 		basePlugin: basePlugin{
 			config:                 config,
 			options:                options,
 			sensuEvent:             nil,
 			eventReader:            os.Stdin,
-			readEvent:              false,
+			readEvent:              readEvent,
 			configurationOverrides: true,
 			errorExitStatus:        1,
 		},
