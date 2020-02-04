@@ -9,5 +9,5 @@ var (
 )
 
 func Version() string {
-	return fmt.Printf("%v, commit %v, built at %v", version, commit, date)
+	return fmt.Sprintf("%v, commit %v, built at %v", version, commit, date)
 }

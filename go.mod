@@ -1,4 +1,4 @@
-module github.com/sensu/sensu-plugins-go-library
+module github.com/sensu/sensu-plugin-sdk
 
 go 1.12
 
