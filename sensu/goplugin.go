@@ -122,7 +122,7 @@ func (p *basePlugin) initPlugin() error {
 		Use:   "version",
 		Short: "Print the version number of this plugin",
 		Run: func(cmd *cobra.Command, args []string) {
-			version.Version()
+			fmt.Println(version.Version())
 		},
 	})
 
