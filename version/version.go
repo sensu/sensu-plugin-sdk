@@ -8,6 +8,6 @@ var (
 	date    = "unknown"
 )
 
-func Version() {
+func Version() string {
 	fmt.Printf("%v, commit %v, built at %v\n", version, commit, date)
 }
