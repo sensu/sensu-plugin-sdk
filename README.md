@@ -1,5 +1,6 @@
 # Sensu Go Plugin Library
 
+[![GoDoc](https://godoc.org/github.com/sensu-community/sensu-plugin-sdk?status.svg)](https://godoc.org/github.com/sensu-community/sensu-plugin-sdk)
 [![Build Status](https://img.shields.io/travis/sensu-community/sensu-plugin-sdk.svg)](https://travis-ci.org/sensu-community/sensu-plugin-sdk)
 
 This project is a framework for building Sensu Go plugins. Plugins can be Checks, Handlers, or Mutators.
