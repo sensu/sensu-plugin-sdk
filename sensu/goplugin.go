@@ -264,14 +264,14 @@ func configurationOverrides(config *PluginConfig, options []*PluginConfigOption,
 			// compile the Annotation keyspace to look for configuration overrides
 			key := path.Join(config.Keyspace, opt.Path)
 			switch {
-			case len(event.Check.Annotations[key]) > 0:
+			case event.Check != nil && len(event.Check.Annotations[key]) > 0:
 				err := setOptionValue(opt, event.Check.Annotations[key])
 				if err != nil {
 					return err
 				}
 				log.Printf("Overriding default handler configuration with value of \"Check.Annotations.%s\" (\"%s\")\n",
 					key, event.Check.Annotations[key])
-			case len(event.Entity.Annotations[key]) > 0:
+			case event.Entity != nil && len(event.Entity.Annotations[key]) > 0:
 				err := setOptionValue(opt, event.Entity.Annotations[key])
 				if err != nil {
 					return err
