@@ -40,7 +40,7 @@ func NewGoCheck(config *PluginConfig, options []*PluginConfigOption,
 
 	check.pluginWorkflowFunction = check.goCheckWorkflow
 	if err := check.initPlugin(); err != nil {
-		log.Fatalf("failed to initialize check plugin: %s", err)
+		log.Printf("failed to initialize check plugin: %s", err)
 	}
 
 	return check

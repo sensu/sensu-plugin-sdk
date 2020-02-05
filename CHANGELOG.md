@@ -8,7 +8,7 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 ## Unreleased
 
 ### Fixed
-- Logs a fatal error if the plugin fails to initialize.
+- Logs an error if the plugin fails to initialize.
 
 ## [0.5.0] - 2020-02-05
 

@@ -38,7 +38,7 @@ func NewGoMutator(config *PluginConfig, options []*PluginConfigOption,
 	}
 	goMutator.pluginWorkflowFunction = goMutator.goMutatorWorkflow
 	if err := goMutator.initPlugin(); err != nil {
-		log.Fatalf("failed to initialize mutator plugin: %s", err)
+		log.Printf("failed to initialize mutator plugin: %s", err)
 	}
 	return goMutator
 }

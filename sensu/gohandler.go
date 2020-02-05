@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/sensu/sensu-go/types"
 	"log"
+
+	"github.com/sensu/sensu-go/types"
 )
 
 type GoHandler struct {
@@ -33,7 +34,7 @@ func NewGoHandler(config *PluginConfig, options []*PluginConfigOption,
 
 	goHandler.pluginWorkflowFunction = goHandler.goHandlerWorkflow
 	if err := goHandler.initPlugin(); err != nil {
-		log.Fatalf("failed to initialize handler plugin: %s", err)
+		log.Printf("failed to initialize handler plugin: %s", err)
 	}
 
 	return goHandler
