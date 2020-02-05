@@ -50,6 +50,9 @@ type PluginConfigOption struct {
 
 	// Usage adds help context to the command-line flag.
 	Usage string
+
+	// Required forces the option to be set and returns an error if not
+	Required bool
 }
 
 // PluginConfig defines the base plugin configuration.
@@ -191,6 +194,12 @@ func setupFlag(cmd *cobra.Command, opt *PluginConfigOption) error {
 	default:
 		return fmt.Errorf("invalid input type: %v", kind)
 	}
+
+	// Mark the flag as required if configured
+	if opt.Required {
+		cmd.MarkFlagRequired(opt.Argument)
+	}
+
 	return nil
 }
 
