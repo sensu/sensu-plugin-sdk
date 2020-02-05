@@ -2,9 +2,11 @@ package sensu
 
 import (
 	"io"
+	"io/ioutil"
 	"os"
 	"testing"
 
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -88,4 +90,55 @@ func clearEnvironment() {
 	_ = os.Unsetenv("ENV_1")
 	_ = os.Unsetenv("ENV_2")
 	_ = os.Unsetenv("ENV_3")
+}
+
+func Test_setupFlag(t *testing.T) {
+	var foo string
+
+	tests := []struct {
+		name           string
+		option         *PluginConfigOption
+		wantExecuteErr bool
+		wantSetupErr   bool
+	}{
+		{
+			name: "Missing required flag should return an error",
+			option: &PluginConfigOption{
+				Argument: "foo",
+				Env:      "FOO",
+				Value:    &foo,
+				Required: true,
+			},
+			wantExecuteErr: true,
+		},
+		{
+			name: "Missing optional flag should not return an error",
+			option: &PluginConfigOption{
+				Argument: "foo",
+				Env:      "FOO",
+				Value:    &foo,
+				Required: false,
+			},
+			wantExecuteErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd := &cobra.Command{
+				Use: "test",
+				RunE: func(cmd *cobra.Command, args []string) error {
+					return nil
+				},
+			}
+
+			if err := setupFlag(cmd, tt.option); (err != nil) != tt.wantSetupErr {
+				t.Fatalf("setupFlag() error = %#v, wantErr %v", err, tt.wantSetupErr)
+			}
+
+			cmd.SetOutput(ioutil.Discard)
+			if err := cmd.Execute(); (err != nil) != tt.wantExecuteErr {
+				t.Fatalf("cmd.Execute() error = %#v, wantErr %v", err, tt.wantExecuteErr)
+			}
+		})
+	}
 }
