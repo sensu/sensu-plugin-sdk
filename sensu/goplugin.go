@@ -104,8 +104,9 @@ func (goPlugin *basePlugin) readSensuEvent() error {
 
 func (p *basePlugin) initPlugin() error {
 	p.cmd = &cobra.Command{
-		Use:   p.config.Name,
-		Short: p.config.Short,
+		Use:           p.config.Name,
+		Short:         p.config.Short,
+		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := viper.BindPFlags(cmd.Flags()); err != nil {
 				return err
@@ -115,7 +116,7 @@ func (p *basePlugin) initPlugin() error {
 	}
 	p.exitFunction = os.Exit
 	p.errorLogFunction = func(format string, a ...interface{}) {
-		_, _ = fmt.Fprintf(os.Stderr, format, a)
+		_, _ = fmt.Fprintf(os.Stderr, format, a...)
 	}
 
 	p.cmd.AddCommand(&cobra.Command{
