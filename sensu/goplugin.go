@@ -120,8 +120,9 @@ func (p *basePlugin) initPlugin() error {
 	}
 
 	p.cmd.AddCommand(&cobra.Command{
-		Use:   "version",
-		Short: "Print the version number of this plugin",
+		Use:           "version",
+		Short:         "Print the version number of this plugin",
+		SilenceErrors: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println(version.Version())
 		},
@@ -217,9 +218,6 @@ func (p *basePlugin) cobraExecuteFunction(args []string) error {
 	}
 
 	exitStatus, err := p.pluginWorkflowFunction(args)
-	if err != nil {
-		fmt.Fprintf(p.cmd.OutOrStdout(), "Error executing plugin: %s", err)
-	}
 	p.exitStatus = exitStatus
 
 	return err
