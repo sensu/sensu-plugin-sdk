@@ -2,6 +2,7 @@ package sensu
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/sensu/sensu-go/types"
@@ -38,7 +39,9 @@ func NewGoCheck(config *PluginConfig, options []*PluginConfigOption,
 	}
 
 	check.pluginWorkflowFunction = check.goCheckWorkflow
-	check.initPlugin()
+	if err := check.initPlugin(); err != nil {
+		log.Printf("failed to initialize check plugin: %s", err)
+	}
 
 	return check
 }

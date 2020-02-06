@@ -3,9 +3,11 @@ package sensu
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/sensu/sensu-go/types"
 	"io"
+	"log"
 	"os"
+
+	"github.com/sensu/sensu-go/types"
 )
 
 type GoMutator struct {
@@ -35,7 +37,9 @@ func NewGoMutator(config *PluginConfig, options []*PluginConfigOption,
 		executeFunction:    executeFunction,
 	}
 	goMutator.pluginWorkflowFunction = goMutator.goMutatorWorkflow
-	goMutator.initPlugin()
+	if err := goMutator.initPlugin(); err != nil {
+		log.Printf("failed to initialize mutator plugin: %s", err)
+	}
 	return goMutator
 }
 
