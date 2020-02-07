@@ -7,9 +7,15 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [0.6.0] - 2020-02-06
+
+### Added
+- Added helpers for TLS configuration.
+
 ### Fixed
 - Logs an error if the plugin fails to initialize.
 - Prevent duplicated error messages fix the formatting.
+- Fixed a bug that could result in a panic when CA certificate is specified.
 
 ## [0.5.0] - 2020-02-05
 
