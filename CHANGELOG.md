@@ -9,6 +9,7 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 - Logs an error if the plugin fails to initialize.
+- Prevent duplicated error messages fix the formatting.
 
 ## [0.5.0] - 2020-02-05
 

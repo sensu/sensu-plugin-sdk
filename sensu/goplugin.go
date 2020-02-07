@@ -104,8 +104,9 @@ func (goPlugin *basePlugin) readSensuEvent() error {
 
 func (p *basePlugin) initPlugin() error {
 	p.cmd = &cobra.Command{
-		Use:   p.config.Name,
-		Short: p.config.Short,
+		Use:           p.config.Name,
+		Short:         p.config.Short,
+		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := viper.BindPFlags(cmd.Flags()); err != nil {
 				return err
@@ -115,12 +116,13 @@ func (p *basePlugin) initPlugin() error {
 	}
 	p.exitFunction = os.Exit
 	p.errorLogFunction = func(format string, a ...interface{}) {
-		_, _ = fmt.Fprintf(os.Stderr, format, a)
+		_, _ = fmt.Fprintf(os.Stderr, format, a...)
 	}
 
 	p.cmd.AddCommand(&cobra.Command{
-		Use:   "version",
-		Short: "Print the version number of this plugin",
+		Use:           "version",
+		Short:         "Print the version number of this plugin",
+		SilenceErrors: true,
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println(version.Version())
 		},
@@ -216,9 +218,6 @@ func (p *basePlugin) cobraExecuteFunction(args []string) error {
 	}
 
 	exitStatus, err := p.pluginWorkflowFunction(args)
-	if err != nil {
-		fmt.Fprintf(p.cmd.OutOrStdout(), "Error executing plugin: %s", err)
-	}
 	p.exitStatus = exitStatus
 
 	return err
