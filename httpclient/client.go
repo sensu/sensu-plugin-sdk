@@ -113,6 +113,10 @@ type CoreClientConfig struct {
 	// CACert, if non-nil, will be used to configure TLS communication. This
 	// is only needed when using a self-signed certificate.
 	CACert *x509.Certificate
+
+	// InsecureSkipVerify disables TLS hostname verification. This should not
+	// be used outside of testing!
+	InsecureSkipVerify bool
 }
 
 func newRequest(ctx context.Context, resource corev2.Resource, verb, server, apikey string) (*http.Request, error) {
@@ -276,6 +280,10 @@ func NewCoreClient(config CoreClientConfig) *CoreClient {
 		client.HTTPClient.Transport.(*http.Transport).TLSClientConfig = &tls.Config{
 			RootCAs: rootCAs,
 		}
+	}
+	// Disable TLS hostname verification
+	if config.InsecureSkipVerify {
+		client.HTTPClient.Transport.(*http.Transport).TLSClientConfig.InsecureSkipVerify = true
 	}
 	return client
 }
