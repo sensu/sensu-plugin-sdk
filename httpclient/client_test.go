@@ -12,6 +12,7 @@ func TestClientGet(t *testing.T) {
 	config := httpclient.CoreClientConfig{
 		URL:    server.URL,
 		APIKey: "use transport layer security",
+		CACert: server.Certificate(),
 	}
 	cl := httpclient.NewCoreClient(config)
 	req := httpclient.NewEventRequest("default", "server", "network")
@@ -29,6 +30,7 @@ func TestClientPut(t *testing.T) {
 	config := httpclient.CoreClientConfig{
 		URL:    server.URL,
 		APIKey: "use transport layer security",
+		CACert: server.Certificate(),
 	}
 	cl := httpclient.NewCoreClient(config)
 	check := corev2.FixtureCheckConfig("fake")
@@ -43,6 +45,7 @@ func TestClientPost(t *testing.T) {
 	config := httpclient.CoreClientConfig{
 		URL:    server.URL,
 		APIKey: "use transport layer security",
+		CACert: server.Certificate(),
 	}
 	cl := httpclient.NewCoreClient(config)
 	check := corev2.FixtureCheckConfig("fake")
@@ -57,6 +60,7 @@ func TestClientDelete(t *testing.T) {
 	config := httpclient.CoreClientConfig{
 		URL:    server.URL,
 		APIKey: "use transport layer security",
+		CACert: server.Certificate(),
 	}
 	cl := httpclient.NewCoreClient(config)
 	check := corev2.FixtureCheckConfig("fake")
