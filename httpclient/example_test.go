@@ -12,7 +12,7 @@ import (
 	corev2 "github.com/sensu/sensu-go/api/core/v2"
 )
 
-var server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+var server = httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 	if req.Method == http.MethodGet {
 		event := corev2.FixtureEvent("server", "network")
 		_ = json.NewEncoder(w).Encode(event)
@@ -23,6 +23,7 @@ func ExampleCoreClient_GetResource() {
 	config := httpclient.CoreClientConfig{
 		URL:    server.URL,
 		APIKey: "use transport layer security",
+		CACert: server.Certificate(),
 	}
 	cl := httpclient.NewCoreClient(config)
 	req := httpclient.NewEventRequest("default", "server", "network")
@@ -39,6 +40,7 @@ func ExampleCoreClient_PutResource() {
 	config := httpclient.CoreClientConfig{
 		URL:    server.URL,
 		APIKey: "use transport layer security",
+		CACert: server.Certificate(),
 	}
 	cl := httpclient.NewCoreClient(config)
 	check := corev2.FixtureCheckConfig("fake")
@@ -54,6 +56,7 @@ func ExampleCoreClient_PostResource() {
 	config := httpclient.CoreClientConfig{
 		URL:    server.URL,
 		APIKey: "use transport layer security",
+		CACert: server.Certificate(),
 	}
 	cl := httpclient.NewCoreClient(config)
 	check := corev2.FixtureCheckConfig("fake")
@@ -69,6 +72,7 @@ func ExampleCoreClient_DeleteResource() {
 	config := httpclient.CoreClientConfig{
 		URL:    server.URL,
 		APIKey: "use transport layer security",
+		CACert: server.Certificate(),
 	}
 	cl := httpclient.NewCoreClient(config)
 	check := corev2.FixtureCheckConfig("fake")

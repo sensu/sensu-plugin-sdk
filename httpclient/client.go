@@ -113,6 +113,10 @@ type CoreClientConfig struct {
 	// CACert, if non-nil, will be used to configure TLS communication. This
 	// is only needed when using a self-signed certificate.
 	CACert *x509.Certificate
+
+	// InsecureSkipVerify disables TLS hostname verification. This should not
+	// be used outside of testing!
+	InsecureSkipVerify bool
 }
 
 func newRequest(ctx context.Context, resource corev2.Resource, verb, server, apikey string) (*http.Request, error) {
@@ -265,17 +269,42 @@ func NewCoreClient(config CoreClientConfig) *CoreClient {
 	// Set up CA cert if provided. By default, the Go HTTP client uses the
 	// system cert pool.
 	if config.CACert != nil {
-		rootCAs, err := x509.SystemCertPool()
-		if err != nil {
-			log.Println(err)
-			rootCAs = x509.NewCertPool()
-		}
+		setCACert(&client.HTTPClient, config.CACert)
+	}
 
-		rootCAs.AddCert(config.CACert)
-
-		client.HTTPClient.Transport.(*http.Transport).TLSClientConfig = &tls.Config{
-			RootCAs: rootCAs,
-		}
+	// Disable TLS hostname verification
+	if config.InsecureSkipVerify {
+		setInsecureSkipVerify(&client.HTTPClient)
 	}
 	return client
+}
+
+func setCACert(client *http.Client, cert *x509.Certificate) {
+	rootCAs, err := x509.SystemCertPool()
+	if err != nil {
+		log.Println(err)
+		rootCAs = x509.NewCertPool()
+	}
+	rootCAs.AddCert(cert)
+	if client.Transport == nil {
+		client.Transport = new(http.Transport)
+	}
+	if transport, ok := client.Transport.(*http.Transport); ok {
+		if transport.TLSClientConfig == nil {
+			transport.TLSClientConfig = new(tls.Config)
+		}
+		transport.TLSClientConfig.RootCAs = rootCAs
+	}
+}
+
+func setInsecureSkipVerify(client *http.Client) {
+	if client.Transport == nil {
+		client.Transport = new(http.Transport)
+	}
+	if transport, ok := client.Transport.(*http.Transport); ok {
+		if transport.TLSClientConfig == nil {
+			transport.TLSClientConfig = new(tls.Config)
+		}
+		transport.TLSClientConfig.InsecureSkipVerify = true
+	}
 }
