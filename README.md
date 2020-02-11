@@ -38,7 +38,7 @@ Configuration options are read from the following sources using the following pr
 * Sensu event entity annotation
 * Command line argument in short or long form
 * Environment variable
-* Optional default value
+* Default value
 
 ```Go
 var (
