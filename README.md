@@ -58,7 +58,7 @@ var (
 )
 ```
 
-### Annotations configuration options override
+### Annotations Configuration Options Override
 
 Configuration options can be overridden using the Sensu event check or entity annotations.
 
