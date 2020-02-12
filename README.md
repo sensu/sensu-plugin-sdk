@@ -6,7 +6,7 @@
 This project is a framework for building Sensu Go plugins. Plugins can be Checks, Handlers, or Mutators.
 With this library the user only needs to define the plugin arguments, an input validation function and an execution function.
 
-## Plugin configuration
+## Plugin Configuration
 
 The plugin configuration contains the plugin information.
 
@@ -25,18 +25,20 @@ var config = Config{
     Name:     "sensu-go-plugin",
     Short:    "Performs my incredible logic",
     Timeout:  10,
-    Keyspace: "sensu.io/plugins/mysensugoplugin/config",
+    Keyspace: "sensu.io/plugins/my-sensu-go-plugin/config",
   },
 }
 ```
 
-## Plugin Options
+## Plugin Configuration Options
 
-These are the supported option types, in order or priority.
-* Sensu Event Check configuration override
-* Sensu Event Entity configuration override
+Configuration options are read from the following sources using the following precedence order. Each item takes precedence over the item below it:
+
+* Sensu event check annotation
+* Sensu event entity annotation
 * Command line argument in short or long form
 * Environment variable
+* Default value
 
 ```Go
 var (
@@ -54,6 +56,18 @@ var (
     },
   }
 )
+```
+
+### Annotations Configuration Options Override
+
+Configuration options can be overridden using the Sensu event check or entity annotations.
+
+For example, if we have a plugin using the **keyspace** `sensu.io/plugins/my-sensu-go-plugin/config` and a configuration option using the **path** `node-name`, the following annotation could be configured in an agent configuration file to override whatever value is configuration via the plugin's flags or environment variables:
+
+```yaml
+# /etc/sensu/agent.yml example
+annotations:
+  sensu.io/plugins/my-sensu-go-plugin/config/node-name: webserver01.example.com
 ```
 
 ## Input Validation Function
