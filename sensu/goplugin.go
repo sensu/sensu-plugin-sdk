@@ -247,6 +247,15 @@ func validateEvent(event *types.Event) error {
 
 func setOptionValue(opt *PluginConfigOption, valueStr string) error {
 	optVal := reflect.Indirect(reflect.ValueOf(opt.Value))
+	if optVal.Type().Kind() == reflect.Slice {
+		_, ok := opt.Value.(*[]string)
+		if ok {
+			a := []string{}
+			a = append(a, valueStr)
+			optVal.Set(reflect.ValueOf(a))
+			return nil
+		}
+	}
 	if optVal.Type().Kind() == reflect.String {
 		optVal.Set(reflect.ValueOf(valueStr))
 		return nil
