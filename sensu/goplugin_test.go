@@ -51,7 +51,7 @@ func TestSetOptionValue_SliceType(t *testing.T) {
 	option.Value = &finalValue
 	err := setOptionValue(&option, "abc")
 	assert.Nil(t, err)
-	assert.Equal(t, []string{"abc"}, finalValue)
+	assert.Equal(t, stringSlice{"abc"}, finalValue)
 }
 
 func TestSetOptionValue_ValidUint64(t *testing.T) {
