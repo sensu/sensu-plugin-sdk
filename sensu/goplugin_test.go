@@ -44,6 +44,16 @@ func TestSetOptionValue_EmptySlice(t *testing.T) {
 	assert.Equal(t, []string{""}, finalValue)
 }
 
+func TestSetOptionValue_SliceType(t *testing.T) {
+	type stringSlice []string
+	var finalValue stringSlice
+	option := defaultOption1
+	option.Value = &finalValue
+	err := setOptionValue(&option, "abc")
+	assert.Nil(t, err)
+	assert.Equal(t, []string{"abc"}, finalValue)
+}
+
 func TestSetOptionValue_ValidUint64(t *testing.T) {
 	var finalValue uint64
 	option := defaultOption1
