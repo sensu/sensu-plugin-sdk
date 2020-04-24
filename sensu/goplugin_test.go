@@ -54,6 +54,15 @@ func TestSetOptionValue_SliceType(t *testing.T) {
 	assert.Equal(t, stringSlice{"abc"}, finalValue)
 }
 
+func TestSetOptionValue_JSONArray(t *testing.T) {
+	var finalValue []string
+	option := defaultOption1
+	option.Value = &finalValue
+	err := setOptionValue(&option, `["abc","def"]`)
+	assert.Nil(t, err)
+	assert.Equal(t, []string{"abc", "def"}, finalValue)
+}
+
 func TestSetOptionValue_ValidUint64(t *testing.T) {
 	var finalValue uint64
 	option := defaultOption1
