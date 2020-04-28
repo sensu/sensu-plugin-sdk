@@ -27,7 +27,7 @@ func TestSetOptionValue_EmptyString(t *testing.T) {
 }
 
 func TestSetOptionValue_Slice(t *testing.T) {
-	var finalValue []string
+	finalValue := []string{"def"}
 	option := defaultOption1
 	option.Value = &finalValue
 	err := setOptionValue(&option, "abc")
@@ -36,7 +36,7 @@ func TestSetOptionValue_Slice(t *testing.T) {
 }
 
 func TestSetOptionValue_EmptySlice(t *testing.T) {
-	var finalValue []string
+	finalValue := []string{"def"}
 	option := defaultOption1
 	option.Value = &finalValue
 	err := setOptionValue(&option, "")
@@ -46,7 +46,7 @@ func TestSetOptionValue_EmptySlice(t *testing.T) {
 
 func TestSetOptionValue_SliceType(t *testing.T) {
 	type stringSlice []string
-	var finalValue stringSlice
+	finalValue := stringSlice{"def"}
 	option := defaultOption1
 	option.Value = &finalValue
 	err := setOptionValue(&option, "abc")
