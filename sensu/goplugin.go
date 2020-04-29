@@ -252,7 +252,8 @@ func setOptionValue(opt *PluginConfigOption, valueStr string) error {
 			return nil
 		}
 		if typ.Elem().Kind() == reflect.String {
-			optVal.Set(reflect.Append(optVal, reflect.ValueOf(valueStr)))
+			empty := []string{}
+			optVal.Set(reflect.Append(reflect.ValueOf(empty), reflect.ValueOf(valueStr)))
 			return nil
 		}
 	}
