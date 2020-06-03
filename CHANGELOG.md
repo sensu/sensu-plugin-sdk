@@ -7,7 +7,7 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
-## [0.7.0] - 2020-06-02
+## [0.7.0] - 2020-06-03
 
 ### Added
 - Added support to require a valid Sensu license file to execute enterprise handlers.
