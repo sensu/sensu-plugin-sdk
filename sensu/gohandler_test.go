@@ -577,3 +577,21 @@ func getHandlerOptions(values *handlerValues) []*PluginConfigOption {
 	}
 	return []*PluginConfigOption{&option1, &option2, &option3}
 }
+
+func TestNewGoHandlerEnterprise(t *testing.T) {
+	var exitStatus int
+	values := &handlerValues{}
+	options := getHandlerOptions(values)
+	goHandler := NewEnterpriseGoHandler(&defaultHandlerConfig, options, func(event *types.Event) error {
+		return nil
+	}, func(event *types.Event) error {
+		return nil
+	})
+	assert.True(t, goHandler.enterprise)
+
+	goHandler.exitFunction = func(i int) {
+		exitStatus = i
+	}
+	goHandler.Execute()
+	assert.Equal(t, 1, exitStatus)
+}
