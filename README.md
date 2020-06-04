@@ -125,3 +125,10 @@ func main() {
 }
 
 ```
+
+Sensu Go >= 5.21 will add the `SENSU_LICENSE_FILE` environment variable to the handler execution.
+To run the plugin independently of Sensu (ex. test/dev), you must set the env var:
+
+```
+SENSU_LICENSE_FILE=$(sensuctl license info --format json)
+```
