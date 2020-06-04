@@ -7,6 +7,16 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [0.7.0] - 2020-06-03
+
+### Added
+- Added support to require a valid Sensu license file to execute enterprise handlers.
+
+### Changed
+- Updated go version from 1.12 to 1.13 in the mod file.
+- Migrated TravisCI to Github Actions.
+- Use go modules where appropriate for dependencies.
+
 ## [0.6.0] - 2020-02-06
 
 ### Added

@@ -1,7 +1,7 @@
 # Sensu Go Plugin Library
 
 [![GoDoc](https://godoc.org/github.com/sensu-community/sensu-plugin-sdk?status.svg)](https://godoc.org/github.com/sensu-community/sensu-plugin-sdk)
-[![Build Status](https://img.shields.io/travis/sensu-community/sensu-plugin-sdk.svg)](https://travis-ci.org/sensu-community/sensu-plugin-sdk)
+![Go Test](https://github.com/sensu-community/sensu-plugin-sdk/workflows/Go%20Test/badge.svg)
 
 This project is a framework for building Sensu Go plugins. Plugins can be Checks, Handlers, or Mutators.
 With this library the user only needs to define the plugin arguments, an input validation function and an execution function.
@@ -110,4 +110,25 @@ func main() {
   err := goHandler.Execute()
 }
 
+```
+
+## Enterprise plugins
+
+An enterprise plugin requires a valid Sensu license to run. Initialize enterprise handlers with
+`NewEnterpriseGoHandler`. If the license file passed from the handler's environment variables is
+invalid, it should return an error without executing.
+
+```Go
+func main() {
+  goHandler := sensu.NewEnterpriseGoHandler(&config.HandlerConfig, options, validateInput, executeHandler)
+  err := goHandler.Execute()
+}
+
+```
+
+Sensu Go >= 5.21 will add the `SENSU_LICENSE_FILE` environment variable to the handler execution.
+To run the plugin independently of Sensu (ex. test/dev), you must set the env var:
+
+```
+SENSU_LICENSE_FILE=$(sensuctl license info --format json)
 ```
