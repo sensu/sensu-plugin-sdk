@@ -144,6 +144,9 @@ func (p *basePlugin) setupFlags(cmd *cobra.Command) error {
 }
 
 func setupFlag(cmd *cobra.Command, opt *PluginConfigOption) error {
+	if len(opt.Argument) == 0 {
+		return nil
+	}
 	viper.BindEnv(opt.Argument, opt.Env)
 	if opt.Value == nil {
 		return errors.New("nil Value")
