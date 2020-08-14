@@ -6,8 +6,12 @@ and this project adheres to [Semantic
 Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
+## [0.8.0] - 2020-08-14
+
 ### Added
 - Added support for to designated PluginConfigOptions as Secret. If Secret, the default value for the argument will not be displayed in the usage message. This prevents sensitive values stored in envvars from leaking into the usage message.
+
 ### Fixed
 - Do not create commandline flag unless Argument is set for PluginConfigOption
 
