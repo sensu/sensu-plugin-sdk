@@ -33,6 +33,7 @@ var (
 		Path:      "path1",
 		Shorthand: "d",
 		Usage:     "First argument",
+		Secret:    true,
 	}
 
 	mutatorOption2 = PluginConfigOption{

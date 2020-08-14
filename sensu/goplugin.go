@@ -50,6 +50,9 @@ type PluginConfigOption struct {
 
 	// Usage adds help context to the command-line flag.
 	Usage string
+
+	// If secret option do not copy Argument value into Default
+	Secret bool
 }
 
 // PluginConfig defines the base plugin configuration.
@@ -195,6 +198,12 @@ func setupFlag(cmd *cobra.Command, opt *PluginConfigOption) error {
 		cmd.Flags().StringVarP(opt.Value.(*string), opt.Argument, opt.Shorthand, viper.GetString(opt.Argument), opt.Usage)
 	default:
 		return fmt.Errorf("invalid input type: %v", kind)
+	}
+	flag := cmd.Flags().Lookup(opt.Argument)
+	// Set empty DefValue string if option is a secret
+	// DefValue is only used for pflag usage message construction
+	if opt.Secret {
+		flag.DefValue = ""
 	}
 	return nil
 }

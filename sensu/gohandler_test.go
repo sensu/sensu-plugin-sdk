@@ -36,6 +36,7 @@ var (
 		Path:      "path1",
 		Shorthand: "d",
 		Usage:     "First argument",
+		Secret:    true,
 	}
 
 	defaultOption2 = PluginConfigOption{
