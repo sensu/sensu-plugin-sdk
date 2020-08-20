@@ -73,6 +73,7 @@ type basePlugin struct {
 	cmd                    *cobra.Command
 	readEvent              bool
 	eventMandatory         bool
+	eventValidation        bool
 	configurationOverrides bool
 	exitStatus             int
 	errorExitStatus        int
@@ -96,9 +97,10 @@ func (goPlugin *basePlugin) readSensuEvent() error {
 	if err != nil {
 		return fmt.Errorf("Failed to unmarshal STDIN data: %s", err)
 	}
-
-	if err = validateEvent(sensuEvent); err != nil {
-		return err
+	if goPlugin.eventValidation {
+		if err = validateEvent(sensuEvent); err != nil {
+			return err
+		}
 	}
 
 	goPlugin.sensuEvent = sensuEvent

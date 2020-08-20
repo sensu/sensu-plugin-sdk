@@ -6,6 +6,9 @@ and this project adheres to [Semantic
 Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Fixed
+- Fix checks that use stdin, do not validate stdin json as event for check plugins
+
 
 ## [0.8.0] - 2020-08-14
 
