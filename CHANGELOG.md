@@ -7,8 +7,9 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 ### Fixed
-- Fix checks that use stdin, do not validate stdin json as event for check plugins
 
+- Fix checks that use stdin, do not validate stdin json as event for check plugins
+- Bump api/core/v2 version to 2.3.0 (adds support for new output_metric_format)
 
 ## [0.8.0] - 2020-08-14
 
