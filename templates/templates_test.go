@@ -5,10 +5,12 @@ import (
 	"github.com/sensu/sensu-go/types"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
 var (
 	templateOk          = "Check: {{ .Check.Name }} Entity: {{ .Entity.Name }} !"
+	templateOkUnixTime  = "Check: {{ .Check.Name }} Entity: {{ .Entity.Name }} Executed: {{(UnixTime .Check.Executed).Format \"2 Jan 2006 15:04:05\"}} !"
 	templateVarNotFound = "Check: {{ .Check.NameZZZ }} Entity: {{ .Entity.Name }} !"
 	templateInvalid     = "Check: {{ .Check.Name Entity: {{ .Entity.Name }} !"
 )
@@ -21,6 +23,17 @@ func TestEvalTemplate_Valid(t *testing.T) {
 	result, err := EvalTemplate("templOk", templateOk, event)
 	assert.Nil(t, err)
 	assert.Equal(t, "Check: check-nginx Entity: webserver01 !", result)
+}
+
+// Valid test - Time Check
+func TestEvalTemplateUnixTime_Valid(t *testing.T) {
+	event := &types.Event{}
+	_ = json.Unmarshal(testEventBytes, event)
+
+	executed := time.Unix(event.Check.Executed, 0).Format("2 Jan 2006 15:04:05")
+	result, err := EvalTemplate("templOk", templateOkUnixTime, event)
+	assert.Nil(t, err)
+	assert.Equal(t, "Check: check-nginx Entity: webserver01 Executed: " + executed + " !", result)
 }
 
 // Variable not found

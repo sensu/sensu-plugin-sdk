@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"text/template"
+	"time"
 )
 
 func EvalTemplate(templName, templStr string, templSrc interface{}) (string, error) {
@@ -14,7 +15,9 @@ func EvalTemplate(templName, templStr string, templSrc interface{}) (string, err
 		return "", fmt.Errorf("must pass in template")
 	}
 
-	templ, err := template.New(templName).Parse(templStr)
+	templ, err := template.New(templName).Funcs(template.FuncMap{
+		"UnixTime": func(i int64) time.Time { return time.Unix(i, 0) },
+	}).Parse(templStr)
 	if err != nil {
 		return "", fmt.Errorf("Error building template: %s", err)
 	}

@@ -132,3 +132,41 @@ To run the plugin independently of Sensu (ex. test/dev), you must set the env va
 ```
 SENSU_LICENSE_FILE=$(sensuctl license info --format json)
 ```
+
+## Templates
+
+The templates package provides a wrapper to the [`text/template`][1] package
+allowing for the use of templates to expand event attributes.  An example of
+this would be using the following as part of a handler:
+
+```
+--summary-template "{{.Entity.Name}}/{{.Check.Name}}"
+```
+
+Which, if given an event with an entity name of webserver01 and a check name of
+check-nginx would yield `webserver01/check-nginx`.
+
+### UnixTime template function
+
+A Sensu Go event contains multiple timestamps (e.g. .Check.Issued,
+.Check.Executed, .Check.LastOk) that are presented in UNIX timestamp format.  A
+function named UnixTime is provided to print these values in a customizable
+human readable format as part of a template.  To customize the output format of
+the timestamp, use the same format as specified by Golang's [Time.Format][2].
+Additional examples can be found [here][3].
+
+**Note:** the predefined format constants are **not** available.
+
+The example below demonstrates its use:
+
+```
+[...]
+Service: {{.Entity.Name}}/{{.Check.Name}}
+Executed: {{(UnixTime .Check.Executed).Format "2 Jan 2006 15:04:05"}}
+Last OK: {{(UnixTime .Check.LastOK).Format "2 Jan 2006 15:04:05"}}
+[...]
+```
+
+[1]: https://golang.org/pkg/text/template/
+[2]: https://golang.org/pkg/time/#Time.Format
+[3]: https://yourbasic.org/golang/format-parse-string-time-date-example/
