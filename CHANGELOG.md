@@ -7,6 +7,11 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [0.10.0] - 2020-10-07
+
+### Added
+Added UnixTime func to template expansion. See README for details.
+
 ## [0.9.0] - 2020-10-07
 
 ### Fixed
