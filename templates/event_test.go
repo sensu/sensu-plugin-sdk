@@ -3,6 +3,7 @@ package templates
 var (
 	testEventBytes = []byte(`
 {
+  "id": "e60d1549-bd57-4281-8273-1a04409aa9fa",
   "timestamp": 1550816106,
   "entity": {
 	"entity_class": "agent",

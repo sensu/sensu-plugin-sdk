@@ -2,6 +2,7 @@ package templates
 
 import (
 	"encoding/json"
+	"github.com/google/uuid"
 	"github.com/sensu/sensu-go/types"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -11,6 +12,7 @@ import (
 var (
 	templateOk          = "Check: {{ .Check.Name }} Entity: {{ .Entity.Name }} !"
 	templateOkUnixTime  = "Check: {{ .Check.Name }} Entity: {{ .Entity.Name }} Executed: {{(UnixTime .Check.Executed).Format \"2 Jan 2006 15:04:05\"}} !"
+	templateOkUUID      = "Check: {{ .Check.Name }} Entity: {{ .Entity.Name }} Event ID: {{UUIDFromBytes .ID}} !"
 	templateVarNotFound = "Check: {{ .Check.NameZZZ }} Entity: {{ .Entity.Name }} !"
 	templateInvalid     = "Check: {{ .Check.Name Entity: {{ .Entity.Name }} !"
 )
@@ -34,6 +36,17 @@ func TestEvalTemplateUnixTime_Valid(t *testing.T) {
 	result, err := EvalTemplate("templOk", templateOkUnixTime, event)
 	assert.Nil(t, err)
 	assert.Equal(t, "Check: check-nginx Entity: webserver01 Executed: " + executed + " !", result)
+}
+
+// Valid test - UUID
+func TestEvalTemplateUUIDValid(t *testing.T) {
+	event := &types.Event{}
+	_ = json.Unmarshal(testEventBytes, event)
+
+	uuidFromEvent, _ := uuid.FromBytes(event.ID)
+	result, err := EvalTemplate("templOk", templateOkUUID, event)
+	assert.Nil(t, err)
+	assert.Equal(t, "Check: check-nginx Entity: webserver01 Event ID: " + uuidFromEvent.String() + " !", result)
 }
 
 // Variable not found
