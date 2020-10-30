@@ -3,6 +3,7 @@ package templates
 import (
 	"bytes"
 	"fmt"
+	"github.com/google/uuid"
 	"text/template"
 	"time"
 )
@@ -17,6 +18,7 @@ func EvalTemplate(templName, templStr string, templSrc interface{}) (string, err
 
 	templ, err := template.New(templName).Funcs(template.FuncMap{
 		"UnixTime": func(i int64) time.Time { return time.Unix(i, 0) },
+		"UUIDFromBytes": uuid.FromBytes,
 	}).Parse(templStr)
 	if err != nil {
 		return "", fmt.Errorf("Error building template: %s", err)
