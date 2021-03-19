@@ -7,6 +7,11 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [0.12.0] - 2021-03-18
+
+### Added
+Added new Hostname templating function.
+
 ## [0.11.0] - 2020-10-30
 ### Added
 - Added support for event ID attribute
