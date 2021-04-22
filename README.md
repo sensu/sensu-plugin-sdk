@@ -1,7 +1,7 @@
 # Sensu Go Plugin Library
 
-[![GoDoc](https://godoc.org/github.com/sensu-community/sensu-plugin-sdk?status.svg)](https://godoc.org/github.com/sensu-community/sensu-plugin-sdk)
-![Go Test](https://github.com/sensu-community/sensu-plugin-sdk/workflows/Go%20Test/badge.svg)
+[![GoDoc](https://godoc.org/github.com/sensu/sensu-plugin-sdk?status.svg)](https://godoc.org/github.com/sensu/sensu-plugin-sdk)
+![Go Test](https://github.com/sensu/sensu-plugin-sdk/workflows/Go%20Test/badge.svg)
 
 This project is a framework for building Sensu Go plugins. Plugins can be Checks, Handlers, or Mutators.
 With this library the user only needs to define the plugin arguments, an input validation function and an execution function.
