@@ -4,17 +4,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/sensu-community/sensu-plugin-sdk/version"
+	"github.com/sensu/sensu-go/types"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"path"
 	"reflect"
-
-	"github.com/sensu-community/sensu-plugin-sdk/version"
-	"github.com/sensu/sensu-go/types"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	"strings"
 )
 
 // GoPlugin defines the GoPlugin interface to be implemented by all types of plugins
@@ -149,7 +149,10 @@ func setupFlag(cmd *cobra.Command, opt *PluginConfigOption) error {
 	if len(opt.Argument) == 0 {
 		return nil
 	}
-	viper.BindEnv(opt.Argument, opt.Env)
+	err := viper.BindEnv(opt.Argument, opt.Env)
+	if err != nil {
+		return err
+	}
 	if opt.Value == nil {
 		return errors.New("nil Value")
 	}
@@ -286,21 +289,25 @@ func configurationOverrides(config *PluginConfig, options []*PluginConfigOption,
 		if len(opt.Path) > 0 {
 			// compile the Annotation keyspace to look for configuration overrides
 			key := path.Join(config.Keyspace, opt.Path)
-			switch {
-			case event.Check != nil && len(event.Check.Annotations[key]) > 0:
-				err := setOptionValue(opt, event.Check.Annotations[key])
-				if err != nil {
-					return err
+			downcase := strings.ToLower(key)
+			keys := []string{downcase, key}
+			for _, key := range keys {
+				switch {
+				case event.Check != nil && len(event.Check.Annotations[key]) > 0:
+					err := setOptionValue(opt, event.Check.Annotations[key])
+					if err != nil {
+						return err
+					}
+					log.Printf("Overriding default handler configuration with value of \"Check.Annotations.%s\" (\"%s\")\n",
+						key, event.Check.Annotations[key])
+				case event.Entity != nil && len(event.Entity.Annotations[key]) > 0:
+					err := setOptionValue(opt, event.Entity.Annotations[key])
+					if err != nil {
+						return err
+					}
+					log.Printf("Overriding default handler configuration with value of \"Entity.Annotations.%s\" (\"%s\")\n",
+						key, event.Entity.Annotations[key])
 				}
-				log.Printf("Overriding default handler configuration with value of \"Check.Annotations.%s\" (\"%s\")\n",
-					key, event.Check.Annotations[key])
-			case event.Entity != nil && len(event.Entity.Annotations[key]) > 0:
-				err := setOptionValue(opt, event.Entity.Annotations[key])
-				if err != nil {
-					return err
-				}
-				log.Printf("Overriding default handler configuration with value of \"Entity.Annotations.%s\" (\"%s\")\n",
-					key, event.Entity.Annotations[key])
 			}
 		}
 	}
