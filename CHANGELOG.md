@@ -7,9 +7,13 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [0.13.1] - 2021-04-22
+### Fixed
+- Fix internal module references to use sensu/sensu-plugin-sdk  
+
 ## [0.13.0] - 2021-04-22
 ### Changed
-- Plugion options using annotation paths will now look for downcased annotation key path as well as uncased path to fix a cornercase associated annotations provied as part of agent config file being automatically downcased.
+- Plugin options using annotation paths will now look for downcased annotation key path as well as uncased path to fix a cornercase associated annotations provied as part of agent config file being automatically downcased.
 - Update module to refer to sensu/sensu-plugin-sdk to reflect repository transfer into sensu github org
 
 ## [0.12.0] - 2021-03-18

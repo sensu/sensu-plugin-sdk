@@ -8,8 +8,8 @@ import (
 	"net/http/httptest"
 	"time"
 
-	"github.com/sensu-community/sensu-plugin-sdk/httpclient"
 	corev2 "github.com/sensu/sensu-go/api/core/v2"
+	"github.com/sensu/sensu-plugin-sdk/httpclient"
 )
 
 var server = httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {

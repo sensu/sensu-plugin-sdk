@@ -9,7 +9,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/sensu-community/sensu-plugin-sdk/sensu"
+	"github.com/sensu/sensu-plugin-sdk/sensu"
 )
 
 func TestSecurityConfig(t *testing.T) {

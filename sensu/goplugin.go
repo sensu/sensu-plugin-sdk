@@ -4,10 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/sensu-community/sensu-plugin-sdk/version"
-	"github.com/sensu/sensu-go/types"
-	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"io"
 	"io/ioutil"
 	"log"
@@ -15,6 +11,11 @@ import (
 	"path"
 	"reflect"
 	"strings"
+
+	"github.com/sensu/sensu-go/types"
+	"github.com/sensu/sensu-plugin-sdk/version"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // GoPlugin defines the GoPlugin interface to be implemented by all types of plugins
