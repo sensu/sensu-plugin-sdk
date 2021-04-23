@@ -7,7 +7,7 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
-## [0.13.1] - 2021-04-22
+## [0.13.1] - 2021-04-23
 ### Fixed
 - Fix internal module references to use sensu/sensu-plugin-sdk  
 
