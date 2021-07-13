@@ -203,7 +203,12 @@ func setupFlag(cmd *cobra.Command, opt *PluginConfigOption) error {
 			return fmt.Errorf("only pointer to []string is allowed, not %v", kind)
 		}
 		if opt.Array {
-			cmd.Flags().StringArrayVarP(ptr, opt.Argument, opt.Shorthand, opt.Default.([]string), opt.Usage)
+			val := viper.GetString(opt.Argument)
+			strSlice := []string{}
+			if len(val) > 0 {
+				strSlice = append(strSlice, val)
+			}
+			cmd.Flags().StringArrayVarP(ptr, opt.Argument, opt.Shorthand, strSlice, opt.Usage)
 		} else {
 			cmd.Flags().StringSliceVarP(ptr, opt.Argument, opt.Shorthand, viper.GetStringSlice(opt.Argument), opt.Usage)
 		}
