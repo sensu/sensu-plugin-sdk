@@ -109,7 +109,7 @@
         "sensu.io/plugins/segp/config/path2": "1357",
         "sensu.io/plugins/segp/config/path3": "false",
         "sensu.io/plugins/segp/config/path4": "[ \"arg4\", \"as escaped escaped json string array of strings\" ]" ,
-        "sensu.io/plugins/segp/config/path5": "arg5 string array override is treated as single string"
+        "sensu.io/plugins/segp/config/path5": "[ \"arg5\", \"as escaped escaped json string array of strings\" ]" 
       }
     }
   }

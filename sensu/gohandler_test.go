@@ -177,7 +177,7 @@ func TestGoHandler_Execute_Check(t *testing.T) {
 			assert.NotNil(t, event)
 			return nil
 		},
-		"value-check1", uint64(1357), false, 2, 1)
+		"value-check1", uint64(1357), false, 2, 2)
 	assert.Equal(t, 0, exitStatus)
 	assert.True(t, validateCalled)
 	assert.True(t, executeCalled)
