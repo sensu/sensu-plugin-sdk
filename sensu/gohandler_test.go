@@ -19,6 +19,8 @@ type handlerValues struct {
 	arg1 string
 	arg2 uint64
 	arg3 bool
+	arg4 []string
+	arg5 []string
 }
 
 var (
@@ -57,7 +59,29 @@ var (
 		Usage:     "Third argument",
 	}
 
-	defaultCmdLineArgs = []string{"--arg1", "value-arg1", "--arg2", "7531", "--arg3=false"}
+	defaultOption4 = PluginConfigOption{
+		Argument:  "arg4",
+		Default:   []string{},
+		Env:       "ENV_4",
+		Path:      "path4",
+		Shorthand: "g",
+		Usage:     "Fourth argument",
+	}
+
+	defaultOption5 = PluginConfigOption{
+		Argument:  "arg5",
+		Default:   []string{},
+		Env:       "ENV_5",
+		Path:      "path5",
+		Shorthand: "i",
+		Usage:     "Fifth argument",
+		Array:     true,
+	}
+
+	defaultCmdLineArgs = []string{"--arg1", "value-arg1", "--arg2", "7531", "--arg3=false",
+		"--arg4=hey,you",
+		"--arg4=clap,hands",
+		`--arg5="this,and,that"`, `--arg5="now,wat"`}
 )
 
 func TestNewGoHandler(t *testing.T) {
@@ -101,7 +125,7 @@ func TestNewGoHandler_NoOptionValue(t *testing.T) {
 
 func goHandlerExecuteUtil(t *testing.T, handlerConfig *PluginConfig, eventFile string, cmdLineArgs []string,
 	validationFunction func(*types.Event) error, executeFunction func(*types.Event) error,
-	expectedValue1 interface{}, expectedValue2 interface{}, expectedValue3 interface{}) (int, string) {
+	expectedValue1 interface{}, expectedValue2 interface{}, expectedValue3 interface{}, expectedValue4 interface{}, expectedValue5 interface{}) (int, string) {
 
 	t.Helper()
 	values := handlerValues{}
@@ -130,10 +154,11 @@ func goHandlerExecuteUtil(t *testing.T, handlerConfig *PluginConfig, eventFile s
 		errorStr = fmt.Sprintf(format, a...)
 	}
 	goHandler.Execute()
-
 	assert.Equal(t, expectedValue1, values.arg1)
 	assert.Equal(t, expectedValue2, values.arg2)
 	assert.Equal(t, expectedValue3, values.arg3)
+	assert.Equal(t, expectedValue4, len(values.arg4))
+	assert.Equal(t, expectedValue5, len(values.arg5))
 
 	return exitStatus, errorStr
 }
@@ -152,7 +177,7 @@ func TestGoHandler_Execute_Check(t *testing.T) {
 			assert.NotNil(t, event)
 			return nil
 		},
-		"value-check1", uint64(1357), false)
+		"value-check1", uint64(1357), false, 0, 0)
 	assert.Equal(t, 0, exitStatus)
 	assert.True(t, validateCalled)
 	assert.True(t, executeCalled)
@@ -172,7 +197,7 @@ func TestGoHandler_Execute_CheckInvalidValue(t *testing.T) {
 			assert.NotNil(t, event)
 			return nil
 		},
-		"value-check1", uint64(33333), false)
+		"value-check1", uint64(33333), false, 0, 0)
 	assert.Equal(t, 1, exitStatus)
 	assert.False(t, validateCalled)
 	assert.False(t, executeCalled)
@@ -192,7 +217,7 @@ func TestGoHandler_Execute_Entity(t *testing.T) {
 			assert.NotNil(t, event)
 			return nil
 		},
-		"value-entity1", uint64(2468), true)
+		"value-entity1", uint64(2468), true, 0, 0)
 
 	assert.Equal(t, 0, exitStatus)
 	assert.True(t, validateCalled)
@@ -213,7 +238,7 @@ func TestGoHandler_Execute_EntityInvalidValue(t *testing.T) {
 			assert.NotNil(t, event)
 			return nil
 		},
-		"value-entity1", uint64(33333), false)
+		"value-entity1", uint64(33333), false, 0, 0)
 
 	assert.Equal(t, 1, exitStatus)
 	assert.False(t, validateCalled)
@@ -237,7 +262,7 @@ func TestGoHandler_Execute_Environment(t *testing.T) {
 			assert.NotNil(t, event)
 			return nil
 		},
-		"value-env1", uint64(9753), true)
+		"value-env1", uint64(9753), true, 0, 0)
 	assert.Equal(t, 0, exitStatus)
 	assert.True(t, validateCalled)
 	assert.True(t, executeCalled)
@@ -257,7 +282,7 @@ func TestGoHandler_Execute_CmdLineArgs(t *testing.T) {
 			assert.NotNil(t, event)
 			return nil
 		},
-		"value-arg1", uint64(7531), false)
+		"value-arg1", uint64(7531), false, 4, 2)
 	assert.Equal(t, 0, exitStatus)
 	assert.True(t, validateCalled)
 	assert.True(t, executeCalled)
@@ -280,7 +305,7 @@ func TestGoHandler_Execute_PriorityCheck(t *testing.T) {
 			assert.NotNil(t, event)
 			return nil
 		},
-		"value-check1", uint64(1357), false)
+		"value-check1", uint64(1357), false, 4, 2)
 	assert.Equal(t, 0, exitStatus)
 	assert.True(t, validateCalled)
 	assert.True(t, executeCalled)
@@ -303,7 +328,7 @@ func TestGoHandler_Execute_PriorityEntity(t *testing.T) {
 			assert.NotNil(t, event)
 			return nil
 		},
-		"value-entity1", uint64(2468), true)
+		"value-entity1", uint64(2468), true, 4, 2)
 	assert.Equal(t, 0, exitStatus)
 	assert.True(t, validateCalled)
 	assert.True(t, executeCalled)
@@ -326,7 +351,7 @@ func TestGoHandler_Execute_PriorityCmdLine(t *testing.T) {
 			assert.NotNil(t, event)
 			return nil
 		},
-		"value-arg1", uint64(7531), false)
+		"value-arg1", uint64(7531), false, 4, 2)
 	assert.Equal(t, 0, exitStatus)
 	assert.True(t, validateCalled)
 	assert.True(t, executeCalled)
@@ -345,7 +370,7 @@ func TestGoHandler_Execute_ValidationError(t *testing.T) {
 			executeCalled = true
 			return nil
 		},
-		"value-arg1", uint64(7531), false)
+		"value-arg1", uint64(7531), false, 4, 2)
 	assert.Equal(t, 1, exitStatus)
 	assert.Contains(t, errorStr, "error validating input: validation error")
 	assert.True(t, validateCalled)
@@ -366,7 +391,7 @@ func TestGoHandler_Execute_ExecuteError(t *testing.T) {
 			assert.NotNil(t, event)
 			return fmt.Errorf("execution error")
 		},
-		"value-arg1", uint64(7531), false)
+		"value-arg1", uint64(7531), false, 4, 2)
 	assert.Equal(t, 1, exitStatus)
 	assert.Contains(t, errorStr, "error executing handler: execution error")
 	assert.True(t, validateCalled)
@@ -387,7 +412,7 @@ func TestGoHandler_Execute_EventNoTimestamp(t *testing.T) {
 			assert.NotNil(t, event)
 			return nil
 		},
-		"value-arg1", uint64(7531), false)
+		"value-arg1", uint64(7531), false, 4, 2)
 	assert.Equal(t, 1, exitStatus)
 	assert.Contains(t, errorStr, "timestamp is missing or must be greater than zero")
 	assert.False(t, validateCalled)
@@ -408,7 +433,7 @@ func TestGoHandler_Execute_EventTimestampZero(t *testing.T) {
 			assert.NotNil(t, event)
 			return nil
 		},
-		"value-arg1", uint64(7531), false)
+		"value-arg1", uint64(7531), false, 4, 2)
 	assert.Equal(t, 1, exitStatus)
 	assert.Contains(t, errorStr, "timestamp is missing or must be greater than zero")
 	assert.False(t, validateCalled)
@@ -429,7 +454,7 @@ func TestGoHandler_Execute_EventNoEntity(t *testing.T) {
 			assert.NotNil(t, event)
 			return nil
 		},
-		"value-arg1", uint64(7531), false)
+		"value-arg1", uint64(7531), false, 4, 2)
 	assert.Equal(t, 1, exitStatus)
 	assert.Contains(t, errorStr, "event must contain an entity")
 	assert.False(t, validateCalled)
@@ -450,7 +475,7 @@ func TestGoHandler_Execute_EventInvalidEntity(t *testing.T) {
 			assert.NotNil(t, event)
 			return nil
 		},
-		"value-arg1", uint64(7531), false)
+		"value-arg1", uint64(7531), false, 4, 2)
 	assert.Equal(t, 1, exitStatus)
 	assert.Contains(t, errorStr, "entity name must not be empty")
 	assert.False(t, validateCalled)
@@ -471,7 +496,7 @@ func TestGoHandler_Execute_EventNoCheck(t *testing.T) {
 			assert.NotNil(t, event)
 			return nil
 		},
-		"value-arg1", uint64(7531), false)
+		"value-arg1", uint64(7531), false, 4, 2)
 	assert.Equal(t, 1, exitStatus)
 	assert.Contains(t, errorStr, "event must contain a check or metrics")
 	assert.False(t, validateCalled)
@@ -492,7 +517,7 @@ func TestGoHandler_Execute_EventInvalidCheck(t *testing.T) {
 			assert.NotNil(t, event)
 			return nil
 		},
-		"value-arg1", uint64(7531), false)
+		"value-arg1", uint64(7531), false, 4, 2)
 	assert.Equal(t, 1, exitStatus)
 	assert.Contains(t, errorStr, "check name must not be empty")
 	assert.False(t, validateCalled)
@@ -513,7 +538,7 @@ func TestGoHandler_Execute_EventInvalidJson(t *testing.T) {
 			assert.NotNil(t, event)
 			return nil
 		},
-		"value-arg1", uint64(7531), false)
+		"value-arg1", uint64(7531), false, 4, 2)
 	assert.Equal(t, 1, exitStatus)
 	assert.Contains(t, errorStr, "Failed to unmarshal STDIN data: invalid character ':' after object key:value pair")
 	assert.False(t, validateCalled)
@@ -534,7 +559,7 @@ func TestGoHandler_Execute_ReaderError(t *testing.T) {
 			assert.NotNil(t, event)
 			return nil
 		},
-		"value-arg1", uint64(7531), false)
+		"value-arg1", uint64(7531), false, 4, 2)
 	assert.Equal(t, 1, exitStatus)
 	assert.Contains(t, errorStr, "Failed to unmarshal STDIN data: invalid character ':' after object key:value pair")
 	assert.False(t, validateCalled)
@@ -557,7 +582,7 @@ func TestGoHandler_Execute_NoKeyspace(t *testing.T) {
 			assert.NotNil(t, event)
 			return nil
 		},
-		"value-arg1", uint64(7531), false)
+		"value-arg1", uint64(7531), false, 4, 2)
 	assert.Equal(t, 0, exitStatus)
 	assert.True(t, validateCalled)
 	assert.True(t, executeCalled)
@@ -567,16 +592,22 @@ func getHandlerOptions(values *handlerValues) []*PluginConfigOption {
 	option1 := defaultOption1
 	option2 := defaultOption2
 	option3 := defaultOption3
+	option4 := defaultOption4
+	option5 := defaultOption5
 	if values != nil {
 		option1.Value = &values.arg1
 		option2.Value = &values.arg2
 		option3.Value = &values.arg3
+		option4.Value = &values.arg4
+		option5.Value = &values.arg5
 	} else {
 		option1.Value = nil
 		option2.Value = nil
 		option3.Value = nil
+		option4.Value = nil
+		option5.Value = nil
 	}
-	return []*PluginConfigOption{&option1, &option2, &option3}
+	return []*PluginConfigOption{&option1, &option2, &option3, &option4, &option5}
 }
 
 func TestNewGoHandlerEnterprise(t *testing.T) {
