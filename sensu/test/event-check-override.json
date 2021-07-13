@@ -107,7 +107,9 @@
       "annotations": {
         "sensu.io/plugins/segp/config/path1": "value-check1",
         "sensu.io/plugins/segp/config/path2": "1357",
-        "sensu.io/plugins/segp/config/path3": "false"
+        "sensu.io/plugins/segp/config/path3": "false",
+        "sensu.io/plugins/segp/config/path4": "this,is,an,override",
+        "sensu.io/plugins/segp/config/path5": "this,is,an,override"
       }
     }
   }
