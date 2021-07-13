@@ -154,6 +154,7 @@ func goHandlerExecuteUtil(t *testing.T, handlerConfig *PluginConfig, eventFile s
 		errorStr = fmt.Sprintf(format, a...)
 	}
 	goHandler.Execute()
+	fmt.Println(values.arg4, len(values.arg4))
 	assert.Equal(t, expectedValue1, values.arg1)
 	assert.Equal(t, expectedValue2, values.arg2)
 	assert.Equal(t, expectedValue3, values.arg3)
@@ -252,8 +253,8 @@ func TestGoHandler_Execute_Environment(t *testing.T) {
 	_ = os.Setenv("ENV_1", "value-env1")
 	_ = os.Setenv("ENV_2", "9753")
 	_ = os.Setenv("ENV_3", "true")
-	_ = os.Setenv("ENV_4", "this,is,an,env,var")
-	_ = os.Setenv("ENV_5", "this,is,an,env,var")
+	_ = os.Setenv("ENV_4", "this, is, an, env, var ")
+	_ = os.Setenv("ENV_5", "this, is, an, env, var")
 	exitStatus, _ := goHandlerExecuteUtil(t, &defaultHandlerConfig, "test/event-no-override.json", nil,
 		func(event *types.Event) error {
 			validateCalled = true
@@ -264,7 +265,7 @@ func TestGoHandler_Execute_Environment(t *testing.T) {
 			assert.NotNil(t, event)
 			return nil
 		},
-		"value-env1", uint64(9753), true, 1, 0)
+		"value-env1", uint64(9753), true, 5, 0)
 	assert.Equal(t, 0, exitStatus)
 	assert.True(t, validateCalled)
 	assert.True(t, executeCalled)
