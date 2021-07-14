@@ -1,7 +1,6 @@
 package sensu
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
@@ -46,7 +45,6 @@ func TestNewGoCheck(t *testing.T) {
 		exitStatus = i
 	}
 	goCheck.Execute()
-	fmt.Println(goCheck.cmd.Usage())
 	assert.Equal(t, 0, exitStatus)
 
 	assert.NotNil(t, goCheck)
