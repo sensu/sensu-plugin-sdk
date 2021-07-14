@@ -203,8 +203,11 @@ func setupFlag(cmd *cobra.Command, opt *PluginConfigOption) error {
 			return fmt.Errorf("only pointer to []string is allowed, not %v", kind)
 		}
 		if opt.Array {
+			// Treat this as a StringArrayVar do not automatically parse string as space delimited list
+			// Grab the fallback envvar value as string via viper
 			val := viper.GetString(opt.Argument)
 			strSlice := []string{}
+			// If the fallback value is non-empty, append it as first string in array
 			if len(val) > 0 {
 				strSlice = append(strSlice, val)
 			}
