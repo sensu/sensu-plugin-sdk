@@ -55,7 +55,7 @@ type PluginConfigOption struct {
 	// If secret option do not copy Argument value into Default
 	Secret bool
 
-	// If array option set, treat StringSlice as StringArray, do not automatically parse as CSV comma delimited
+	// If array option set, treat StringSlice as StringArray, do not automatically parse as CSV space delimited
 	Array bool
 }
 
