@@ -7,6 +7,10 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [0.14.0] - 2021-08-09
+### Added
+- Added new aws sub-package to facilite aws service plugin development
+
 ## [0.13.1] - 2021-04-23
 ### Fixed
 - Fix internal module references to use sensu/sensu-plugin-sdk  
