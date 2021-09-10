@@ -76,6 +76,7 @@ type basePlugin struct {
 	eventMandatory         bool
 	eventValidation        bool
 	configurationOverrides bool
+	verbose                bool
 	exitStatus             int
 	errorExitStatus        int
 	exitFunction           func(int)
@@ -228,7 +229,7 @@ func (p *basePlugin) cobraExecuteFunction(args []string) error {
 
 	// If there is an event process configuration overrides if necessary
 	if p.sensuEvent != nil && p.configurationOverrides {
-		err := configurationOverrides(p.config, p.options, p.sensuEvent)
+		err := configurationOverrides(p.config, p.options, p.sensuEvent, p.verbose)
 		if err != nil {
 			p.exitStatus = p.errorExitStatus
 			return err
@@ -282,7 +283,7 @@ func setOptionValue(opt *PluginConfigOption, valueStr string) error {
 	return json.Unmarshal([]byte(valueStr), &opt.Value)
 }
 
-func configurationOverrides(config *PluginConfig, options []*PluginConfigOption, event *types.Event) error {
+func configurationOverrides(config *PluginConfig, options []*PluginConfigOption, event *types.Event, verbose bool) error {
 	if config.Keyspace == "" {
 		return nil
 	}
@@ -299,15 +300,19 @@ func configurationOverrides(config *PluginConfig, options []*PluginConfigOption,
 					if err != nil {
 						return err
 					}
-					log.Printf("Overriding default handler configuration with value of \"Check.Annotations.%s\" (\"%s\")\n",
-						key, event.Check.Annotations[key])
+					if verbose {
+						log.Printf("Overriding default plugin configuration with value of \"Check.Annotations.%s\" (\"%s\")\n",
+							key, event.Check.Annotations[key])
+					}
 				case event.Entity != nil && len(event.Entity.Annotations[key]) > 0:
 					err := setOptionValue(opt, event.Entity.Annotations[key])
 					if err != nil {
 						return err
 					}
-					log.Printf("Overriding default handler configuration with value of \"Entity.Annotations.%s\" (\"%s\")\n",
-						key, event.Entity.Annotations[key])
+					if verbose {
+						log.Printf("Overriding default plugin configuration with value of \"Entity.Annotations.%s\" (\"%s\")\n",
+							key, event.Entity.Annotations[key])
+					}
 				}
 			}
 		}
