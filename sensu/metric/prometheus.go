@@ -50,7 +50,8 @@ func (m Points) ToProm(writer io.Writer) error {
 			}
 			metricFamilies[point.Name] = family
 		}
-		timestampMS := point.Timestamp
+		// Sensu metric points are in unix time since epoch, prom uses milliseconds
+		timestampMS := point.Timestamp * 1000
 		metricType := family.GetType()
 		value := point.Value
 		metric := &dto.Metric{

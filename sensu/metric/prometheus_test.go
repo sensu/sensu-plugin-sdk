@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"testing"
+	"time"
 
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
@@ -15,6 +16,7 @@ import (
 
 // TestToPromMetric tests attributes of single metric points from prom exposition
 func TestToPromMetric(t *testing.T) {
+	ts, _ := time.Parse(time.RFC3339, "2022-01-01T15:04:05Z")
 	testCases := []struct {
 		Name     string
 		Metric   *corev2.MetricPoint
@@ -25,19 +27,19 @@ func TestToPromMetric(t *testing.T) {
 			Metric: &corev2.MetricPoint{
 				Name:      "metric_point",
 				Value:     22.234,
-				Timestamp: 1e8,
+				Timestamp: ts.Unix(),
 			},
 			Expected: dto.MetricFamily{
 				Name:   sptr("metric_point"),
 				Type:   dto.MetricType_UNTYPED.Enum(),
-				Metric: []*dto.Metric{{Untyped: &dto.Untyped{Value: fptr(22.234)}, TimestampMs: iptr(1e8)}},
+				Metric: []*dto.Metric{{Untyped: &dto.Untyped{Value: fptr(22.234)}, TimestampMs: iptr(ts.UnixMilli())}},
 			},
 		}, {
 			Name: "Counter With Help Info",
 			Metric: &corev2.MetricPoint{
 				Name:      "gc_cycles",
 				Value:     20.0,
-				Timestamp: 1e8,
+				Timestamp: 1e8 + 22,
 				Tags: []*corev2.MetricTag{
 					{Name: "prom_type", Value: "counter"},
 					{Name: "prom_help", Value: "halp"},
@@ -47,7 +49,7 @@ func TestToPromMetric(t *testing.T) {
 				Name:   sptr("gc_cycles"),
 				Type:   dto.MetricType_COUNTER.Enum(),
 				Help:   sptr("halp"),
-				Metric: []*dto.Metric{{Counter: &dto.Counter{Value: fptr(20.0)}, TimestampMs: iptr(1e8)}},
+				Metric: []*dto.Metric{{Counter: &dto.Counter{Value: fptr(20.0)}, TimestampMs: iptr(1e11 + 22e3)}},
 			},
 		}, {
 			Name: "Gauge With Extra Tags",
@@ -67,7 +69,7 @@ func TestToPromMetric(t *testing.T) {
 					{
 						Label:       []*dto.LabelPair{{Name: sptr("fizz"), Value: sptr("buzz")}},
 						Gauge:       &dto.Gauge{Value: fptr(20.0)},
-						TimestampMs: iptr(1e8),
+						TimestampMs: iptr(1e11),
 					},
 				},
 			},
