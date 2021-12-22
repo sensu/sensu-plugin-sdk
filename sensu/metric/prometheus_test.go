@@ -32,7 +32,7 @@ func TestToPromMetric(t *testing.T) {
 			Expected: dto.MetricFamily{
 				Name:   sptr("metric_point"),
 				Type:   dto.MetricType_UNTYPED.Enum(),
-				Metric: []*dto.Metric{{Untyped: &dto.Untyped{Value: fptr(22.234)}, TimestampMs: iptr(ts.UnixMilli())}},
+				Metric: []*dto.Metric{{Untyped: &dto.Untyped{Value: fptr(22.234)}, TimestampMs: iptr(ts.UnixNano() / 1e6)}},
 			},
 		}, {
 			Name: "Counter With Help Info",
