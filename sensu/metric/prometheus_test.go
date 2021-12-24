@@ -16,7 +16,11 @@ import (
 
 // TestToPromMetric tests attributes of single metric points from prom exposition
 func TestToPromMetric(t *testing.T) {
-	ts, _ := time.Parse(time.RFC3339, "2022-01-01T15:04:05Z")
+	ts, _ := time.Parse(time.RFC3339Nano, "2022-01-01T15:04:05.25Z")
+	tsUnixNano := ts.UnixNano()
+	tsUnixMicro := int64(tsUnixNano / 1e3)
+	tsUnixMilli := int64(tsUnixNano / 1e6)
+	tsUnix := ts.Unix()
 	testCases := []struct {
 		Name     string
 		Metric   *corev2.MetricPoint
@@ -27,19 +31,19 @@ func TestToPromMetric(t *testing.T) {
 			Metric: &corev2.MetricPoint{
 				Name:      "metric_point",
 				Value:     22.234,
-				Timestamp: ts.Unix(),
+				Timestamp: tsUnixNano,
 			},
 			Expected: dto.MetricFamily{
 				Name:   sptr("metric_point"),
 				Type:   dto.MetricType_UNTYPED.Enum(),
-				Metric: []*dto.Metric{{Untyped: &dto.Untyped{Value: fptr(22.234)}, TimestampMs: iptr(ts.UnixNano() / 1e6)}},
+				Metric: []*dto.Metric{{Untyped: &dto.Untyped{Value: fptr(22.234)}, TimestampMs: iptr(tsUnixMilli)}},
 			},
 		}, {
 			Name: "Counter With Help Info",
 			Metric: &corev2.MetricPoint{
 				Name:      "gc_cycles",
 				Value:     20.0,
-				Timestamp: 1e8 + 22,
+				Timestamp: tsUnixMilli,
 				Tags: []*corev2.MetricTag{
 					{Name: "prom_type", Value: "counter"},
 					{Name: "prom_help", Value: "halp"},
@@ -49,14 +53,14 @@ func TestToPromMetric(t *testing.T) {
 				Name:   sptr("gc_cycles"),
 				Type:   dto.MetricType_COUNTER.Enum(),
 				Help:   sptr("halp"),
-				Metric: []*dto.Metric{{Counter: &dto.Counter{Value: fptr(20.0)}, TimestampMs: iptr(1e11 + 22e3)}},
+				Metric: []*dto.Metric{{Counter: &dto.Counter{Value: fptr(20.0)}, TimestampMs: iptr(tsUnixMilli)}},
 			},
 		}, {
 			Name: "Gauge With Extra Tags",
 			Metric: &corev2.MetricPoint{
 				Name:      "goroutines",
 				Value:     20.0,
-				Timestamp: 1e8,
+				Timestamp: tsUnix,
 				Tags: []*corev2.MetricTag{
 					{Name: "prom_type", Value: "Gauge"},
 					{Name: "fizz", Value: "buzz"},
@@ -69,9 +73,26 @@ func TestToPromMetric(t *testing.T) {
 					{
 						Label:       []*dto.LabelPair{{Name: sptr("fizz"), Value: sptr("buzz")}},
 						Gauge:       &dto.Gauge{Value: fptr(20.0)},
-						TimestampMs: iptr(1e11),
+						TimestampMs: iptr(tsUnixMilli - (tsUnixMilli % 1000)), // drop 3 lsd
 					},
 				},
+			},
+		}, {
+			Name: "Metric with Microsecond Timestamp",
+			Metric: &corev2.MetricPoint{
+				Name:      "gc_cycles",
+				Value:     20.0,
+				Timestamp: tsUnixMicro,
+				Tags: []*corev2.MetricTag{
+					{Name: "prom_type", Value: "counter"},
+					{Name: "prom_help", Value: "halp"},
+				},
+			},
+			Expected: dto.MetricFamily{
+				Name:   sptr("gc_cycles"),
+				Type:   dto.MetricType_COUNTER.Enum(),
+				Help:   sptr("halp"),
+				Metric: []*dto.Metric{{Counter: &dto.Counter{Value: fptr(20.0)}, TimestampMs: iptr(tsUnixMilli)}},
 			},
 		},
 	}

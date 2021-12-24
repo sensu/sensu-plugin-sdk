@@ -2,7 +2,9 @@ package metric
 
 import (
 	"io"
+	"math"
 	"strings"
+	"time"
 
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
@@ -50,8 +52,8 @@ func (m Points) ToProm(writer io.Writer) error {
 			}
 			metricFamilies[point.Name] = family
 		}
-		// Sensu metric points are in unix time since epoch, prom uses milliseconds
-		timestampMS := point.Timestamp * 1000
+
+		timestampMS := msTimestamp(point.Timestamp)
 		metricType := family.GetType()
 		value := point.Value
 		metric := &dto.Metric{
@@ -91,4 +93,24 @@ func (m Points) ToProm(writer io.Writer) error {
 		}
 	}
 	return nil
+}
+
+// msTimestamp auto-detection of metric point timestamp precision using a heuristic with a 250-ish year cutoff
+func msTimestamp(ts int64) int64 {
+	timestamp := ts
+	switch ts := math.Log10(float64(timestamp)); {
+	case ts < 10:
+		// assume timestamp is seconds convert to millisecond
+		timestamp = time.Unix(timestamp, 0).UnixNano() / int64(time.Millisecond)
+	case ts < 13:
+		// assume timestamp is milliseconds
+	case ts < 16:
+		// assume timestamp is microseconds
+		timestamp = (timestamp * 1000) / int64(time.Millisecond)
+	default:
+		// assume timestamp is nanoseconds
+		timestamp = timestamp / int64(time.Millisecond)
+	}
+
+	return timestamp
 }
