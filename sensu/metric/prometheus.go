@@ -1,6 +1,7 @@
 package metric
 
 import (
+	"fmt"
 	"io"
 	"math"
 	"strconv"
@@ -96,7 +97,7 @@ func (m Points) ToProm(writer io.Writer) error {
 				val := pointTags[model.BucketLabel]
 				le, err := strconv.ParseFloat(val, 64)
 				if err != nil {
-					le = 0.0
+					return fmt.Errorf("could not map metric point to Prometheus histogram bucket. expected 'le' tag to be a floating point number: %v", err)
 				}
 				metric.Histogram.Bucket = append(metric.Histogram.Bucket, &dto.Bucket{CumulativeCount: &ct, UpperBound: &le})
 			}
@@ -119,7 +120,7 @@ func (m Points) ToProm(writer io.Writer) error {
 				qLabel := pointTags[model.QuantileLabel]
 				quant, err := strconv.ParseFloat(qLabel, 64)
 				if err != nil {
-					quant = 0.0
+					return fmt.Errorf("could not map metric point to Prometheus summary quantile. expected 'quantile' tag to be a floating point number: %v", err)
 				}
 				metric.Summary.Quantile = append(metric.Summary.Quantile, &dto.Quantile{Quantile: &quant, Value: &value})
 			}
