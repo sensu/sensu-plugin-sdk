@@ -167,6 +167,7 @@ func msTimestamp(ts int64) int64 {
 	return timestamp
 }
 
+// normalizedName for prometheus metric family
 func normalizedName(point *corev2.MetricPoint) string {
 	switch name := point.Name; {
 	case strings.HasSuffix(name, "_bucket"):
@@ -174,7 +175,7 @@ func normalizedName(point *corev2.MetricPoint) string {
 	case strings.HasSuffix(name, "_sum"):
 		fallthrough
 	case strings.HasSuffix(name, "_count"):
-		// only truncate histograms and summary names
+		// only truncate suffix when explicity marked as a prometheus hisogram or summary
 		isComplexMetric := false
 		for _, t := range point.Tags {
 			if t.Name == sensuPromTypeTagName {
@@ -221,6 +222,7 @@ func createFamily(name string, tags map[string]string) *dto.MetricFamily {
 	}
 }
 
+// findMatchingLabels returns the first metric where all labels match the provided tags
 func findMatchingLabels(tags map[string]string, metrics []*dto.Metric) *dto.Metric {
 	for _, match := range metrics {
 		if len(tags) != len(match.Label) {
