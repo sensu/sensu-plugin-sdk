@@ -3,11 +3,13 @@ package metric
 import (
 	"io"
 	"math"
+	"strconv"
 	"strings"
 	"time"
 
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
+	"github.com/prometheus/common/model"
 	corev2 "github.com/sensu/sensu-go/api/core/v2"
 )
 
@@ -23,34 +25,17 @@ type Points []*corev2.MetricPoint
 func (m Points) ToProm(writer io.Writer) error {
 	metricFamilies := make(map[string]*dto.MetricFamily)
 	for _, point := range m {
-		var family *dto.MetricFamily
-		family, ok := metricFamilies[point.Name]
-		if !ok {
-			name := point.Name
-			var help string
-			metricType := dto.MetricType_UNTYPED
-			for _, tag := range point.Tags {
-				if tag.Name == sensuPromHelpTagName {
-					help = tag.Value
-					continue
-				}
-				if tag.Name == sensuPromTypeTagName {
-					val := strings.ToLower(tag.Value)
-					switch val {
-					case "counter":
-						metricType = dto.MetricType_COUNTER
-					case "gauge":
-						metricType = dto.MetricType_GAUGE
-					}
-				}
-			}
+		pointTags := make(map[string]string)
+		for _, tag := range point.Tags {
+			pointTags[tag.Name] = tag.Value
+		}
 
-			family = &dto.MetricFamily{
-				Name: &name,
-				Help: &help,
-				Type: &metricType,
-			}
-			metricFamilies[point.Name] = family
+		var family *dto.MetricFamily
+		name := normalizedName(point)
+		family, ok := metricFamilies[name]
+		if !ok {
+			family = createFamily(name, pointTags)
+			metricFamilies[name] = family
 		}
 
 		timestampMS := msTimestamp(point.Timestamp)
@@ -58,6 +43,29 @@ func (m Points) ToProm(writer io.Writer) error {
 		value := point.Value
 		metric := &dto.Metric{
 			TimestampMs: &timestampMS,
+		}
+
+		// histograms and symmaries are inferred from multiple metric points
+		extendsComplexMetric := false
+
+		filteredTags := make(map[string]string)
+		for k, v := range pointTags {
+			if k == sensuPromHelpTagName || k == sensuPromTypeTagName {
+				continue
+			}
+			if metricType == dto.MetricType_HISTOGRAM && k == model.BucketLabel {
+				continue
+			}
+			if metricType == dto.MetricType_SUMMARY && k == model.QuantileLabel {
+				continue
+			}
+			filteredTags[k] = v
+		}
+
+		for k, v := range filteredTags {
+			tagName := k
+			tagVal := v
+			metric.Label = append(metric.Label, &dto.LabelPair{Name: &tagName, Value: &tagVal})
 		}
 		switch metricType {
 		case dto.MetricType_COUNTER:
@@ -68,19 +76,63 @@ func (m Points) ToProm(writer io.Writer) error {
 			metric.Gauge = &dto.Gauge{
 				Value: &value,
 			}
+		case dto.MetricType_HISTOGRAM:
+			// see if metric point already exists
+			if match := findMatchingLabels(filteredTags, family.Metric); match != nil {
+				extendsComplexMetric = true
+				metric = match
+			}
+			if metric.Histogram == nil {
+				metric.Histogram = &dto.Histogram{}
+			}
+			switch {
+			case strings.HasSuffix(point.Name, "_count"):
+				sampleCount := uint64(value)
+				metric.Histogram.SampleCount = &sampleCount
+			case strings.HasSuffix(point.Name, "_sum"):
+				metric.Histogram.SampleSum = &value
+			case strings.HasSuffix(point.Name, "_bucket"):
+				ct := uint64(value)
+				val := pointTags[model.BucketLabel]
+				le, err := strconv.ParseFloat(val, 64)
+				if err != nil {
+					le = 0.0
+				}
+				metric.Histogram.Bucket = append(metric.Histogram.Bucket, &dto.Bucket{CumulativeCount: &ct, UpperBound: &le})
+			}
+		case dto.MetricType_SUMMARY:
+			// see if metric point already exists
+			if match := findMatchingLabels(filteredTags, family.Metric); match != nil {
+				extendsComplexMetric = true
+				metric = match
+			}
+			if metric.Summary == nil {
+				metric.Summary = &dto.Summary{}
+			}
+			switch {
+			case strings.HasSuffix(point.Name, "_count"):
+				sampleCount := uint64(value)
+				metric.Summary.SampleCount = &sampleCount
+			case strings.HasSuffix(point.Name, "_sum"):
+				metric.Summary.SampleSum = &value
+			case family.GetName() == point.Name:
+				qLabel := pointTags[model.QuantileLabel]
+				quant, err := strconv.ParseFloat(qLabel, 64)
+				if err != nil {
+					quant = 0.0
+				}
+				metric.Summary.Quantile = append(metric.Summary.Quantile, &dto.Quantile{Quantile: &quant, Value: &value})
+			}
+
 		default:
 			metric.Untyped = &dto.Untyped{
 				Value: &value,
 			}
 		}
 
-		for _, tag := range point.Tags {
-			if tag.Name == sensuPromHelpTagName || tag.Name == sensuPromTypeTagName {
-				continue
-			}
-			tagName := tag.Name
-			tagVal := tag.Value
-			metric.Label = append(metric.Label, &dto.LabelPair{Name: &tagName, Value: &tagVal})
+		// this metric point mutated an existing hisogram or summary - skip appending to family
+		if extendsComplexMetric {
+			continue
 		}
 		family.Metric = append(family.Metric, metric)
 	}
@@ -113,4 +165,78 @@ func msTimestamp(ts int64) int64 {
 	}
 
 	return timestamp
+}
+
+func normalizedName(point *corev2.MetricPoint) string {
+	switch name := point.Name; {
+	case strings.HasSuffix(name, "_bucket"):
+		fallthrough
+	case strings.HasSuffix(name, "_sum"):
+		fallthrough
+	case strings.HasSuffix(name, "_count"):
+		// only truncate histograms and summary names
+		isComplexMetric := false
+		for _, t := range point.Tags {
+			if t.Name == sensuPromTypeTagName {
+				val := strings.ToLower(t.Value)
+				if val == "histogram" || val == "summary" {
+					isComplexMetric = true
+				}
+				break
+			}
+		}
+		if !isComplexMetric {
+			return name
+		}
+		parts := strings.Split(name, "_")
+		return strings.Join(parts[:len(parts)-1], "_")
+	default:
+		return name
+	}
+}
+
+func createFamily(name string, tags map[string]string) *dto.MetricFamily {
+	var help string
+	metricType := dto.MetricType_UNTYPED
+	if val, ok := tags[sensuPromHelpTagName]; ok {
+		help = val
+	}
+	if val, ok := tags[sensuPromTypeTagName]; ok {
+		val = strings.ToLower(val)
+		switch val {
+		case "counter":
+			metricType = dto.MetricType_COUNTER
+		case "gauge":
+			metricType = dto.MetricType_GAUGE
+		case "histogram":
+			metricType = dto.MetricType_HISTOGRAM
+		case "summary":
+			metricType = dto.MetricType_SUMMARY
+		}
+	}
+	return &dto.MetricFamily{
+		Name: &name,
+		Help: &help,
+		Type: &metricType,
+	}
+}
+
+func findMatchingLabels(tags map[string]string, metrics []*dto.Metric) *dto.Metric {
+	for _, match := range metrics {
+		if len(tags) != len(match.Label) {
+			continue
+		}
+		hasMatch := true
+		for _, tag := range match.Label {
+			v, ok := tags[tag.GetName()]
+			if !ok || v != tag.GetValue() {
+				hasMatch = false
+				break
+			}
+		}
+		if hasMatch {
+			return match
+		}
+	}
+	return nil
 }
