@@ -154,12 +154,12 @@ func msTimestamp(ts int64) int64 {
 	switch ts := math.Log10(float64(timestamp)); {
 	case ts < 10:
 		// assume timestamp is seconds convert to millisecond
-		timestamp = time.Unix(timestamp, 0).UnixNano() / int64(time.Millisecond)
+		timestamp = timestamp * 1e3
 	case ts < 13:
 		// assume timestamp is milliseconds
 	case ts < 16:
 		// assume timestamp is microseconds
-		timestamp = (timestamp * 1000) / int64(time.Millisecond)
+		timestamp = (timestamp / 1e3)
 	default:
 		// assume timestamp is nanoseconds
 		timestamp = timestamp / int64(time.Millisecond)
