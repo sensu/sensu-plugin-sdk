@@ -7,6 +7,9 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Fixed
+- CLI usage is no longer displayed when business logic execution fails.
+
 ## [0.14.0] - 2021-08-09
 ### Added
 - Added new aws sub-package to facilite aws service plugin development
