@@ -7,8 +7,20 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [0.15.0] - 2022-02-17
+### Changed
+- Removed aws specific functionality, that will now exist as part of cloudwatch plugin
+
+### Added
+- Add ToProm function for sensu corev2 metric points
+
 ### Fixed
 - CLI usage is no longer displayed when business logic execution fails.
+
+
+## [0.14.1] - 2021-09-10
+### Fixed
+- Fix for annotation override output polluting check output
 
 ## [0.14.0] - 2021-08-09
 ### Added
