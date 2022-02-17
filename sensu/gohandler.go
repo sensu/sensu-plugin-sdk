@@ -93,7 +93,7 @@ func (goHandler *GoHandler) goHandlerWorkflow(_ []string) (int, error) {
 	// Validate input using validateFunction
 	err := goHandler.validationFunction(event)
 	if err != nil {
-		return 1, fmt.Errorf("error validating input: %s", err)
+		return 1, ErrValidationFailed(err.Error())
 	}
 
 	// Execute handler logic using executeFunction

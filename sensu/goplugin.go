@@ -114,12 +114,18 @@ func (p *basePlugin) initPlugin() error {
 		Use:           p.config.Name,
 		Short:         p.config.Short,
 		SilenceErrors: true,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := viper.BindPFlags(cmd.Flags()); err != nil {
-				return err
-			}
-			return p.cobraExecuteFunction(args)
-		},
+	}
+	p.cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		if err := viper.BindPFlags(cmd.Flags()); err != nil {
+			return err
+		}
+		err := p.cobraExecuteFunction(args)
+		if _, ok := err.(ErrValidationFailed); !ok {
+			p.cmd.SilenceUsage = true
+		} else {
+			err = fmt.Errorf("error validating input: %s", err)
+		}
+		return err
 	}
 	p.exitFunction = os.Exit
 	p.errorLogFunction = func(format string, a ...interface{}) {

@@ -53,7 +53,7 @@ func (goCheck *GoCheck) goCheckWorkflow(_ []string) (int, error) {
 	// Validate input using validateFunction
 	status, err := goCheck.validationFunction(goCheck.sensuEvent)
 	if err != nil {
-		return status, fmt.Errorf("error validating input: %s", err)
+		return status, ErrValidationFailed(err.Error())
 	}
 
 	// Execute check logic using executeFunction
