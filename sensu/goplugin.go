@@ -22,6 +22,8 @@ type GoPlugin interface {
 	Execute()
 }
 
+// SetAnnotationResult is returned by SetAnnotation, and indicates what kind of
+// setter action was taken, if any.
 type SetAnnotationResult struct {
 	AnnotationKey    string
 	AnnotationValue  string
@@ -29,12 +31,17 @@ type SetAnnotationResult struct {
 	EntityAnnotation bool
 }
 
+// ConfigOption is an interface. It exists so that users can create slices of
+// configuration options with different types. For instance,
+// []ConfigOption{&PluginConfigOption[int]{}, &PluginConfigOption[string]{}}
 type ConfigOption interface {
 	SetupFlag(*cobra.Command) error
 	SetValue(string) error
 	SetAnnotationValue(keySpace string, e *corev2.Event) (SetAnnotationResult, error)
 }
 
+// OptionValue is a type constraint that creates a compile-time guard against
+// creating a PluginConfigOption with an unsupported data type.
 type OptionValue interface {
 	~int |  ~int32 | ~int64 | ~uint | ~uint32 | ~uint64 | ~float32 | ~float64 | ~bool | ~string | ~map[string]string | ~[]string
 }
