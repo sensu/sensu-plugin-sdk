@@ -9,10 +9,9 @@ import (
 	"log"
 	"os"
 	"path"
-	"reflect"
 	"strings"
 
-	"github.com/sensu/sensu-go/types"
+	corev2 "github.com/sensu/sensu-go/api/core/v2"
 	"github.com/sensu/sensu-plugin-sdk/version"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -23,16 +22,33 @@ type GoPlugin interface {
 	Execute()
 }
 
+type SetAnnotationResult struct {
+	AnnotationKey    string
+	AnnotationValue  string
+	CheckAnnotation  bool
+	EntityAnnotation bool
+}
+
+type ConfigOption interface {
+	SetupFlag(*cobra.Command) error
+	SetValue(string) error
+	SetAnnotationValue(keySpace string, e *corev2.Event) (SetAnnotationResult, error)
+}
+
+type OptionValue interface {
+	~int |  ~int32 | ~int64 | ~uint | ~uint32 | ~uint64 | ~float32 | ~float64 | ~bool | ~string | ~map[string]string | ~[]string
+}
+
 // PluginConfigOption defines an option to be read by the plugin on startup. An
 // option can be passed using a command line argument, an environment variable or
 // at for some plugin types using a configuration override from the Sensu event.
-type PluginConfigOption struct {
+type PluginConfigOption[T OptionValue] struct {
 	// Value is the value to read the configured flag or environment variable into.
 	// Pass a pointer to any value in your plugin in order to fill it in with the
 	// data from a flag or environment variable. The parsing will be done with
 	// a function supplied by viper. See the viper documentation for details on
 	// how various data types are parsed.
-	Value interface{}
+	Value *T
 
 	// Path is the path to the Sensu annotation to consult when parsing config.
 	Path string
@@ -47,7 +63,7 @@ type PluginConfigOption struct {
 	Shorthand string
 
 	// Default is the default value of the config option.
-	Default interface{}
+	Default T
 
 	// Usage adds help context to the command-line flag.
 	Usage string
@@ -64,11 +80,11 @@ type PluginConfig struct {
 	Keyspace string
 }
 
-// basePlugin defines the basic configuration to be used by all plugin types.
+// basePlugin defines the basic configuration to be used by all plugin corev2.
 type basePlugin struct {
 	config                 *PluginConfig
-	options                []*PluginConfigOption
-	sensuEvent             *types.Event
+	options                []ConfigOption
+	sensuEvent             *corev2.Event
 	eventReader            io.Reader
 	pluginWorkflowFunction func([]string) (int, error)
 	cmd                    *cobra.Command
@@ -87,17 +103,17 @@ func (goPlugin *basePlugin) readSensuEvent() error {
 	eventJSON, err := ioutil.ReadAll(goPlugin.eventReader)
 	if err != nil {
 		if goPlugin.eventMandatory {
-			return fmt.Errorf("Failed to read STDIN: %s", err)
+			return fmt.Errorf("failed to read stdin: %s", err)
 		} else {
 			// if event is not mandatory return without going any further
 			return nil
 		}
 	}
 
-	sensuEvent := &types.Event{}
+	sensuEvent := &corev2.Event{}
 	err = json.Unmarshal(eventJSON, sensuEvent)
 	if err != nil {
-		return fmt.Errorf("Failed to unmarshal STDIN data: %s", err)
+		return fmt.Errorf("failed to unmarshal stdin event: %s", err)
 	}
 	if goPlugin.eventValidation {
 		if err = validateEvent(sensuEvent); err != nil {
@@ -146,76 +162,56 @@ func (p *basePlugin) initPlugin() error {
 
 func (p *basePlugin) setupFlags(cmd *cobra.Command) error {
 	for _, opt := range p.options {
-		if err := setupFlag(cmd, opt); err != nil {
+		if err := opt.SetupFlag(cmd); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func setupFlag(cmd *cobra.Command, opt *PluginConfigOption) error {
-	if len(opt.Argument) == 0 {
+func (p *PluginConfigOption[T]) SetupFlag(cmd *cobra.Command) error {
+	if len(p.Argument) == 0 {
 		return nil
 	}
-	err := viper.BindEnv(opt.Argument, opt.Env)
+	if p.Value == nil {
+		return errors.New("setup flag: couldn't write into nil value")
+	}
+	err := viper.BindEnv(p.Argument, p.Env)
 	if err != nil {
 		return err
 	}
-	if opt.Value == nil {
-		return errors.New("nil Value")
-	}
-	if reflect.TypeOf(opt.Value).Kind() != reflect.Ptr {
-		return errors.New("Value is not a pointer")
-	}
-	value := reflect.Indirect(reflect.ValueOf(opt.Value))
-	if opt.Default != nil {
-		defaultType := reflect.TypeOf(opt.Default)
-		valueType := value.Type()
-		if t1, t2 := valueType.Kind(), defaultType.Kind(); t1 != t2 {
-			return fmt.Errorf("Value type does not match Default type: %v != %v", t1, t2)
-		}
-		viper.SetDefault(opt.Argument, opt.Default)
-	}
-	switch kind := value.Type().Kind(); kind {
-	case reflect.Bool:
-		cmd.Flags().BoolVarP(opt.Value.(*bool), opt.Argument, opt.Shorthand, viper.GetBool(opt.Argument), opt.Usage)
-	case reflect.Int:
-		cmd.Flags().IntVarP(opt.Value.(*int), opt.Argument, opt.Shorthand, viper.GetInt(opt.Argument), opt.Usage)
-	case reflect.Int32:
-		cmd.Flags().Int32VarP(opt.Value.(*int32), opt.Argument, opt.Shorthand, viper.GetInt32(opt.Argument), opt.Usage)
-	case reflect.Int64:
-		cmd.Flags().Int64VarP(opt.Value.(*int64), opt.Argument, opt.Shorthand, viper.GetInt64(opt.Argument), opt.Usage)
-	case reflect.Uint:
-		cmd.Flags().UintVarP(opt.Value.(*uint), opt.Argument, opt.Shorthand, viper.GetUint(opt.Argument), opt.Usage)
-	case reflect.Uint32:
-		cmd.Flags().Uint32VarP(opt.Value.(*uint32), opt.Argument, opt.Shorthand, viper.GetUint32(opt.Argument), opt.Usage)
-	case reflect.Uint64:
-		cmd.Flags().Uint64VarP(opt.Value.(*uint64), opt.Argument, opt.Shorthand, viper.GetUint64(opt.Argument), opt.Usage)
-	case reflect.Float32:
-		cmd.Flags().Float32VarP(opt.Value.(*float32), opt.Argument, opt.Shorthand, float32(viper.GetFloat64(opt.Argument)), opt.Usage)
-	case reflect.Float64:
-		cmd.Flags().Float64VarP(opt.Value.(*float64), opt.Argument, opt.Shorthand, viper.GetFloat64(opt.Argument), opt.Usage)
-	case reflect.Map:
-		ptr, ok := opt.Value.(*map[string]string)
-		if !ok {
-			return fmt.Errorf("only pointer to map[string]string is allowed, not %v", kind)
-		}
-		cmd.Flags().StringToStringVarP(ptr, opt.Argument, opt.Shorthand, viper.GetStringMapString(opt.Argument), opt.Usage)
-	case reflect.Slice:
-		ptr, ok := opt.Value.(*[]string)
-		if !ok {
-			return fmt.Errorf("only pointer to []string is allowed, not %v", kind)
-		}
-		cmd.Flags().StringSliceVarP(ptr, opt.Argument, opt.Shorthand, viper.GetStringSlice(opt.Argument), opt.Usage)
-	case reflect.String:
-		cmd.Flags().StringVarP(opt.Value.(*string), opt.Argument, opt.Shorthand, viper.GetString(opt.Argument), opt.Usage)
+	switch value := (interface{}(p.Value)).(type) {
+	case *bool:
+		cmd.Flags().BoolVarP(value, p.Argument, p.Shorthand, viper.GetBool(p.Argument), p.Usage)
+	case *int:
+		cmd.Flags().IntVarP(value, p.Argument, p.Shorthand, viper.GetInt(p.Argument), p.Usage)
+	case *int32:
+		cmd.Flags().Int32VarP(value, p.Argument, p.Shorthand, viper.GetInt32(p.Argument), p.Usage)
+	case *int64:
+		cmd.Flags().Int64VarP(value, p.Argument, p.Shorthand, viper.GetInt64(p.Argument), p.Usage)
+	case *uint:
+		cmd.Flags().UintVarP(value, p.Argument, p.Shorthand, viper.GetUint(p.Argument), p.Usage)
+	case *uint32:
+		cmd.Flags().Uint32VarP(value, p.Argument, p.Shorthand, viper.GetUint32(p.Argument), p.Usage)
+	case *uint64:
+		cmd.Flags().Uint64VarP(value, p.Argument, p.Shorthand, viper.GetUint64(p.Argument), p.Usage)
+	case *float32:
+		cmd.Flags().Float32VarP(value, p.Argument, p.Shorthand, float32(viper.GetFloat64(p.Argument)), p.Usage)
+	case *float64:
+		cmd.Flags().Float64VarP(value, p.Argument, p.Shorthand, viper.GetFloat64(p.Argument), p.Usage)
+	case *map[string]string:
+		cmd.Flags().StringToStringVarP(value, p.Argument, p.Shorthand, viper.GetStringMapString(p.Argument), p.Usage)
+	case *[]string:
+		cmd.Flags().StringSliceVarP(value, p.Argument, p.Shorthand, viper.GetStringSlice(p.Argument), p.Usage)
+	case *string:
+		cmd.Flags().StringVarP(value, p.Argument, p.Shorthand, viper.GetString(p.Argument), p.Usage)
 	default:
-		return fmt.Errorf("invalid input type: %v", kind)
+		return errors.New("setup flag: unknown value type")
 	}
-	flag := cmd.Flags().Lookup(opt.Argument)
+	flag := cmd.Flags().Lookup(p.Argument)
 	// Set empty DefValue string if option is a secret
 	// DefValue is only used for pflag usage message construction
-	if opt.Secret {
+	if p.Secret {
 		flag.DefValue = ""
 	}
 	return nil
@@ -262,7 +258,7 @@ func (p *basePlugin) Execute() {
 	p.exitFunction(p.exitStatus)
 }
 
-func validateEvent(event *types.Event) error {
+func validateEvent(event *corev2.Event) error {
 	if event.Timestamp <= 0 {
 		return errors.New("timestamp is missing or must be greater than zero")
 	}
@@ -270,57 +266,66 @@ func validateEvent(event *types.Event) error {
 	return event.Validate()
 }
 
-func setOptionValue(opt *PluginConfigOption, valueStr string) error {
-	optVal := reflect.Indirect(reflect.ValueOf(opt.Value))
-	if typ := optVal.Type(); typ.Kind() == reflect.Slice {
-		if err := json.Unmarshal([]byte(valueStr), &opt.Value); err == nil {
+func (p *PluginConfigOption[T]) SetValue(valueStr string) error {
+	switch value := (interface{}(p.Value)).(type) {
+	case *[]string:
+		if err := json.Unmarshal([]byte(valueStr), value); err == nil {
 			return nil
 		}
-		if typ.Elem().Kind() == reflect.String {
-			empty := []string{}
-			optVal.Set(reflect.Append(reflect.ValueOf(empty), reflect.ValueOf(valueStr)))
-			return nil
-		}
-	}
-	if optVal.Type().Kind() == reflect.String {
-		optVal.Set(reflect.ValueOf(valueStr))
+		*value = []string{valueStr}
 		return nil
+	case *string:
+		*value = valueStr
+		return nil
+	default:
+		return json.Unmarshal([]byte(valueStr), value)
 	}
-	return json.Unmarshal([]byte(valueStr), &opt.Value)
 }
 
-func configurationOverrides(config *PluginConfig, options []*PluginConfigOption, event *types.Event, verbose bool) error {
+func (p *PluginConfigOption[T]) SetAnnotationValue(keySpace string, event *corev2.Event) (SetAnnotationResult, error) {
+	key := path.Join(keySpace, p.Path)
+	downcase := strings.ToLower(key)
+	keys := []string{downcase, key}
+	var result SetAnnotationResult
+	for _, key := range keys {
+		var value string
+		if event.Check != nil {
+			value, _ = event.Check.Annotations[key]
+			result.CheckAnnotation = len(value) > 0
+		}
+		if value == "" && event.Entity != nil {
+			value, _ = event.Entity.Annotations[key]
+			result.EntityAnnotation = len(value) > 0
+		}
+		if len(value) > 0 {
+			result.AnnotationKey = key
+			result.AnnotationValue = value
+			return result, p.SetValue(value)
+		}
+	}
+	return result, nil
+}
+
+func configurationOverrides(config *PluginConfig, options []ConfigOption, event *corev2.Event, verbose bool) error {
 	if config.Keyspace == "" {
 		return nil
 	}
 	for _, opt := range options {
-		if len(opt.Path) > 0 {
-			// compile the Annotation keyspace to look for configuration overrides
-			key := path.Join(config.Keyspace, opt.Path)
-			downcase := strings.ToLower(key)
-			keys := []string{downcase, key}
-			for _, key := range keys {
-				switch {
-				case event.Check != nil && len(event.Check.Annotations[key]) > 0:
-					err := setOptionValue(opt, event.Check.Annotations[key])
-					if err != nil {
-						return err
-					}
-					if verbose {
-						log.Printf("Overriding default plugin configuration with value of \"Check.Annotations.%s\" (\"%s\")\n",
-							key, event.Check.Annotations[key])
-					}
-				case event.Entity != nil && len(event.Entity.Annotations[key]) > 0:
-					err := setOptionValue(opt, event.Entity.Annotations[key])
-					if err != nil {
-						return err
-					}
-					if verbose {
-						log.Printf("Overriding default plugin configuration with value of \"Entity.Annotations.%s\" (\"%s\")\n",
-							key, event.Entity.Annotations[key])
-					}
-				}
+		result, err := opt.SetAnnotationValue(config.Keyspace, event)
+		if err != nil {
+			return err
+		}
+		if verbose {
+			var what string
+			if result.CheckAnnotation {
+				what = "check"
+			} else if result.EntityAnnotation {
+				what = "entity"
+			} else {
+				continue
 			}
+			msg := "overriding default plugin configuration with value of \"%s.annotations.%s\" (%q)"
+			log.Printf(msg, what, result.AnnotationKey, result.AnnotationValue)
 		}
 	}
 	return nil

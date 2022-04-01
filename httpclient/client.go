@@ -23,7 +23,7 @@ import (
 type ResourceRequest struct {
 	corev2.TypeMeta
 	corev2.ObjectMeta
-	types.Resource
+	corev2.Resource
 }
 
 func (r ResourceRequest) String() string {
@@ -154,7 +154,7 @@ func newRequest(ctx context.Context, resource corev2.Resource, verb, server, api
 // consult the contents of the ResourceRequest in order to fill the request.
 //
 // Once the request is completed, the contents of the response will be read into
-// the types.Resource passed in.
+// the corev2.Resource passed in.
 //
 // If the server returns a reponse code greater than 400, an HTTPError will be
 // returned with the status code and the first 64KB of the response.
@@ -162,7 +162,7 @@ func newRequest(ctx context.Context, resource corev2.Resource, verb, server, api
 // If the HTTP request is completed successfully, whether or not a 4xx error
 // occurred, then a non-nil http.Response will be returned with its response
 // body closed.
-func (c *CoreClient) GetResource(ctx context.Context, r ResourceRequest, in types.Resource) (*http.Response, error) {
+func (c *CoreClient) GetResource(ctx context.Context, r ResourceRequest, in corev2.Resource) (*http.Response, error) {
 	req, err := newRequest(ctx, r.Resource, http.MethodGet, c.Config.URL, c.Config.APIKey)
 	if err != nil {
 		return nil, err

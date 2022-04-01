@@ -7,19 +7,19 @@ import (
 
 	"log"
 
-	"github.com/sensu/sensu-go/types"
+	corev2 "github.com/sensu/sensu-go/api/core/v2"
 	"github.com/sensu/sensu-licensing/api/licensing"
 )
 
 type GoHandler struct {
 	basePlugin
-	validationFunction func(event *types.Event) error
-	executeFunction    func(event *types.Event) error
+	validationFunction func(event *corev2.Event) error
+	executeFunction    func(event *corev2.Event) error
 	enterprise         bool
 }
 
-func NewGoHandler(config *PluginConfig, options []*PluginConfigOption,
-	validationFunction func(event *types.Event) error, executeFunction func(event *types.Event) error) *GoHandler {
+func NewGoHandler(config *PluginConfig, options []ConfigOption,
+	validationFunction func(event *corev2.Event) error, executeFunction func(event *corev2.Event) error) *GoHandler {
 	goHandler := &GoHandler{
 		basePlugin: basePlugin{
 			config:                 config,
@@ -45,8 +45,8 @@ func NewGoHandler(config *PluginConfig, options []*PluginConfigOption,
 	return goHandler
 }
 
-func NewEnterpriseGoHandler(config *PluginConfig, options []*PluginConfigOption,
-	validationFunction func(event *types.Event) error, executeFunction func(event *types.Event) error) *GoHandler {
+func NewEnterpriseGoHandler(config *PluginConfig, options []ConfigOption,
+	validationFunction func(event *corev2.Event) error, executeFunction func(event *corev2.Event) error) *GoHandler {
 	goHandler := &GoHandler{
 		basePlugin: basePlugin{
 			config:                 config,
