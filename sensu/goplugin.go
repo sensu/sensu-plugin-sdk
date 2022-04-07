@@ -43,7 +43,7 @@ type ConfigOption interface {
 // OptionValue is a type constraint that creates a compile-time guard against
 // creating a PluginConfigOption with an unsupported data type.
 type OptionValue interface {
-	~int |  ~int32 | ~int64 | ~uint | ~uint32 | ~uint64 | ~float32 | ~float64 | ~bool | ~string | ~map[string]string | ~[]string
+	~int | ~int32 | ~int64 | ~uint | ~uint32 | ~uint64 | ~float32 | ~float64 | ~bool | ~string | ~map[string]string | ~[]string
 }
 
 // PluginConfigOption defines an option to be read by the plugin on startup. An
@@ -187,6 +187,7 @@ func (p *PluginConfigOption[T]) SetupFlag(cmd *cobra.Command) error {
 	if err != nil {
 		return err
 	}
+	viper.SetDefault(p.Argument, p.Default)
 	switch value := (interface{}(p.Value)).(type) {
 	case *bool:
 		cmd.Flags().BoolVarP(value, p.Argument, p.Shorthand, viper.GetBool(p.Argument), p.Usage)
