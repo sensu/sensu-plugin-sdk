@@ -67,16 +67,16 @@ func TestNewGoMutator(t *testing.T) {
 	})
 
 	assert.NotNil(t, goMutator)
-	assert.NotNil(t, goMutator.options)
-	assert.Equal(t, options, goMutator.options)
-	assert.NotNil(t, goMutator.config)
-	assert.Equal(t, &defaultMutatorConfig, goMutator.config)
+	assert.NotNil(t, goMutator.framework.options)
+	assert.Equal(t, options, goMutator.framework.options)
+	assert.NotNil(t, goMutator.framework.config)
+	assert.Equal(t, &defaultMutatorConfig, goMutator.framework.config)
 	assert.NotNil(t, goMutator.validationFunction)
 	assert.NotNil(t, goMutator.executeFunction)
-	assert.Nil(t, goMutator.sensuEvent)
-	assert.Equal(t, os.Stdin, goMutator.eventReader)
-	assert.NotNil(t, goMutator.pluginWorkflowFunction)
-	assert.NotNil(t, goMutator.cmd)
+	assert.Nil(t, goMutator.framework.GetStdinEvent())
+	assert.Equal(t, os.Stdin, goMutator.framework.eventReader)
+	assert.NotNil(t, goMutator.framework.pluginWorkflowFunction)
+	assert.NotNil(t, goMutator.framework.cmd)
 }
 
 func TestNewGoMutator_NoOptionValue(t *testing.T) {
@@ -93,7 +93,7 @@ func TestNewGoMutator_NoOptionValue(t *testing.T) {
 	assert.NotNil(t, goMutator)
 
 	var exitStatus = -99
-	goMutator.exitFunction = func(i int) {
+	goMutator.framework.exitFunction = func(i int) {
 		exitStatus = i
 	}
 	goMutator.Execute()
@@ -113,22 +113,22 @@ func goMutatorExecuteUtil(t *testing.T, mutatorConfig *PluginConfig, eventFile s
 	}
 
 	if len(cmdLineArgs) > 0 {
-		goMutator.cmd.SetArgs(cmdLineArgs)
+		goMutator.framework.cmd.SetArgs(cmdLineArgs)
 	} else {
-		goMutator.cmd.SetArgs([]string{})
+		goMutator.framework.cmd.SetArgs([]string{})
 	}
 
-	goMutator.cmd.SilenceErrors = true
-	goMutator.cmd.SilenceUsage = true
+	goMutator.framework.cmd.SilenceErrors = true
+	goMutator.framework.cmd.SilenceUsage = true
 
 	// Replace stdin reader with file reader
 	var exitStatus = -99
 	var errorStr = ""
-	goMutator.eventReader = getFileReader(eventFile)
-	goMutator.exitFunction = func(i int) {
+	goMutator.framework.eventReader = getFileReader(eventFile)
+	goMutator.framework.exitFunction = func(i int) {
 		exitStatus = i
 	}
-	goMutator.errorLogFunction = func(format string, a ...interface{}) {
+	goMutator.framework.errorLogFunction = func(format string, a ...interface{}) {
 		errorStr = fmt.Sprintf(format, a...)
 	}
 	goMutator.Execute()

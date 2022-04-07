@@ -15,17 +15,22 @@ const (
 	CheckStateUnknown  = 3
 )
 
-type GoCheck struct {
-	basePlugin
+// GoCheck is deprecated, use Check
+type GoCheck = Check
+
+// Check is a framework for writing sensu checks.
+type Check struct {
+	framework          pluginFramework
 	validationFunction func(event *corev2.Event) (int, error)
 	executeFunction    func(event *corev2.Event) (int, error)
 }
 
-func NewGoCheck(config *PluginConfig, options []ConfigOption,
+// NewCheck creates a new check.
+func NewCheck(config *PluginConfig, options []ConfigOption,
 	validationFunction func(*corev2.Event) (int, error),
-	executeFunction func(*corev2.Event) (int, error), readEvent bool) *GoCheck {
-	check := &GoCheck{
-		basePlugin: basePlugin{
+	executeFunction func(*corev2.Event) (int, error), readEvent bool) *Check {
+	check := &Check{
+		framework: pluginFramework{
 			config:                 config,
 			options:                options,
 			sensuEvent:             nil,
@@ -40,27 +45,35 @@ func NewGoCheck(config *PluginConfig, options []ConfigOption,
 		executeFunction:    executeFunction,
 	}
 
-	check.pluginWorkflowFunction = check.goCheckWorkflow
-	if err := check.initPlugin(); err != nil {
+	check.framework.SetWorkflow(check.workflow)
+	if err := check.framework.Init(); err != nil {
 		log.Printf("failed to initialize check plugin: %s", err)
 	}
 
 	return check
 }
 
+// NewGoCheck is deprecated, use NewCheck.
+var NewGoCheck = NewCheck
+
 // Executes the check
-func (goCheck *GoCheck) goCheckWorkflow(_ []string) (int, error) {
+func (c *Check) workflow(_ []string) (int, error) {
 	// Validate input using validateFunction
-	status, err := goCheck.validationFunction(goCheck.sensuEvent)
+	status, err := c.validationFunction(c.framework.GetStdinEvent())
 	if err != nil {
 		return status, ErrValidationFailed(err.Error())
 	}
 
 	// Execute check logic using executeFunction
-	status, err = goCheck.executeFunction(goCheck.sensuEvent)
+	status, err = c.executeFunction(c.framework.GetStdinEvent())
 	if err != nil {
 		return status, fmt.Errorf("error executing check: %s", err)
 	}
 
 	return status, nil
+}
+
+// Execute is the check's entry point.
+func (c *Check) Execute() {
+	c.framework.Execute()
 }

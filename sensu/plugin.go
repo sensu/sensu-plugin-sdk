@@ -17,11 +17,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-// GoPlugin defines the GoPlugin interface to be implemented by all types of plugins
-type GoPlugin interface {
-	Execute()
-}
-
 // SetAnnotationResult is returned by SetAnnotation, and indicates what kind of
 // setter action was taken, if any.
 type SetAnnotationResult struct {
@@ -87,8 +82,8 @@ type PluginConfig struct {
 	Keyspace string
 }
 
-// basePlugin defines the basic configuration to be used by all plugin corev2.
-type basePlugin struct {
+// pluginFramework defines the basic configuration to be used by all plugin types.
+type pluginFramework struct {
 	config                 *PluginConfig
 	options                []ConfigOption
 	sensuEvent             *corev2.Event
@@ -106,10 +101,14 @@ type basePlugin struct {
 	errorLogFunction       func(format string, a ...interface{})
 }
 
-func (goPlugin *basePlugin) readSensuEvent() error {
-	eventJSON, err := ioutil.ReadAll(goPlugin.eventReader)
+func (p *pluginFramework) SetWorkflow(f func([]string) (int, error)) {
+	p.pluginWorkflowFunction = f
+}
+
+func (p *pluginFramework) readSensuEvent() error {
+	eventJSON, err := ioutil.ReadAll(p.eventReader)
 	if err != nil {
-		if goPlugin.eventMandatory {
+		if p.eventMandatory {
 			return fmt.Errorf("failed to read stdin: %s", err)
 		} else {
 			// if event is not mandatory return without going any further
@@ -122,17 +121,21 @@ func (goPlugin *basePlugin) readSensuEvent() error {
 	if err != nil {
 		return fmt.Errorf("failed to unmarshal stdin event: %s", err)
 	}
-	if goPlugin.eventValidation {
+	if p.eventValidation {
 		if err = validateEvent(sensuEvent); err != nil {
 			return err
 		}
 	}
 
-	goPlugin.sensuEvent = sensuEvent
+	p.sensuEvent = sensuEvent
 	return nil
 }
 
-func (p *basePlugin) initPlugin() error {
+// Init sets up the framework's configuration parsing and execution environment.
+func (p *pluginFramework) Init() error {
+	if p.pluginWorkflowFunction == nil {
+		return errors.New("workflow function is nil")
+	}
 	p.cmd = &cobra.Command{
 		Use:           p.config.Name,
 		Short:         p.config.Short,
@@ -167,7 +170,7 @@ func (p *basePlugin) initPlugin() error {
 	return p.setupFlags(p.cmd)
 }
 
-func (p *basePlugin) setupFlags(cmd *cobra.Command) error {
+func (p *pluginFramework) setupFlags(cmd *cobra.Command) error {
 	for _, opt := range p.options {
 		if err := opt.SetupFlag(cmd); err != nil {
 			return err
@@ -176,6 +179,8 @@ func (p *basePlugin) setupFlags(cmd *cobra.Command) error {
 	return nil
 }
 
+// SetupFlag sets up the option's command line flag, and also binds the
+// associated environment variable, and default value.
 func (p *PluginConfigOption[T]) SetupFlag(cmd *cobra.Command) error {
 	if len(p.Argument) == 0 {
 		return nil
@@ -225,9 +230,15 @@ func (p *PluginConfigOption[T]) SetupFlag(cmd *cobra.Command) error {
 	return nil
 }
 
+// GetStdinEvent gets the event that was received on stdin, if any. Can return
+// nil values.
+func (p *pluginFramework) GetStdinEvent() *corev2.Event {
+	return p.sensuEvent
+}
+
 // cobraExecuteFunction is called by the argument's execute. The configuration overrides will be processed if necessary
 // and the pluginWorkflowFunction function executed
-func (p *basePlugin) cobraExecuteFunction(args []string) error {
+func (p *pluginFramework) cobraExecuteFunction(args []string) error {
 	// Read the Sensu event if required
 	if p.readEvent {
 		err := p.readSensuEvent()
@@ -252,7 +263,9 @@ func (p *basePlugin) cobraExecuteFunction(args []string) error {
 	return err
 }
 
-func (p *basePlugin) Execute() {
+// Execute executes the plugin. Check, Handler, and Mutator all call this in
+// their own Execute functions.
+func (p *pluginFramework) Execute() {
 	// Validate the cmd is set
 	if p.cmd == nil {
 		p.errorLogFunction("Error executing %s: Arguments must be initialized\n", p.config.Name)
@@ -274,6 +287,8 @@ func validateEvent(event *corev2.Event) error {
 	return event.Validate()
 }
 
+// SetValue sets the configuration value based on either a raw string or
+// json-encoded string.
 func (p *PluginConfigOption[T]) SetValue(valueStr string) error {
 	switch value := (interface{}(p.Value)).(type) {
 	case *[]string:
@@ -290,6 +305,9 @@ func (p *PluginConfigOption[T]) SetValue(valueStr string) error {
 	}
 }
 
+// SetAnnotationValue sets the option value based on a prefix indicated by
+// keyspace, and an event object. The check annotation will be resolved first,
+// followed by the entity annotation.
 func (p *PluginConfigOption[T]) SetAnnotationValue(keySpace string, event *corev2.Event) (SetAnnotationResult, error) {
 	key := path.Join(keySpace, p.Path)
 	downcase := strings.ToLower(key)

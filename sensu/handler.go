@@ -3,28 +3,31 @@ package sensu
 import (
 	"encoding/json"
 	"fmt"
-	"os"
-
 	"log"
+	"os"
 
 	corev2 "github.com/sensu/sensu-go/api/core/v2"
 	"github.com/sensu/sensu-licensing/api/licensing"
 )
 
-type GoHandler struct {
-	basePlugin
+// Handler is a framework for writing Sensu handlers.
+type Handler struct {
+	framework          pluginFramework
 	validationFunction func(event *corev2.Event) error
 	executeFunction    func(event *corev2.Event) error
 	enterprise         bool
 }
 
-func NewGoHandler(config *PluginConfig, options []ConfigOption,
-	validationFunction func(event *corev2.Event) error, executeFunction func(event *corev2.Event) error) *GoHandler {
-	goHandler := &GoHandler{
-		basePlugin: basePlugin{
+// GoHandler is deprecated, use Handler
+type GoHandler = Handler
+
+// NewHandler creates a new handler.
+func NewHandler(config *PluginConfig, options []ConfigOption,
+	validationFunction func(event *corev2.Event) error, executeFunction func(event *corev2.Event) error) *Handler {
+	handler := &Handler{
+		framework: pluginFramework{
 			config:                 config,
 			options:                options,
-			sensuEvent:             nil,
 			eventReader:            os.Stdin,
 			readEvent:              true,
 			eventMandatory:         true,
@@ -37,21 +40,24 @@ func NewGoHandler(config *PluginConfig, options []ConfigOption,
 		executeFunction:    executeFunction,
 	}
 
-	goHandler.pluginWorkflowFunction = goHandler.goHandlerWorkflow
-	if err := goHandler.initPlugin(); err != nil {
+	handler.framework.SetWorkflow(handler.workflow)
+	if err := handler.framework.Init(); err != nil {
 		log.Printf("failed to initialize handler plugin: %s", err)
 	}
 
-	return goHandler
+	return handler
 }
 
-func NewEnterpriseGoHandler(config *PluginConfig, options []ConfigOption,
-	validationFunction func(event *corev2.Event) error, executeFunction func(event *corev2.Event) error) *GoHandler {
-	goHandler := &GoHandler{
-		basePlugin: basePlugin{
+// NewGoHandler is deprecated, use NewHandler
+var NewGoHandler = NewHandler
+
+// NewEnterpriseHandler is like NewHandler, but requires a valid license.
+func NewEnterpriseHandler(config *PluginConfig, options []ConfigOption,
+	validationFunction func(event *corev2.Event) error, executeFunction func(event *corev2.Event) error) *Handler {
+	handler := &Handler{
+		framework: pluginFramework{
 			config:                 config,
 			options:                options,
-			sensuEvent:             nil,
 			eventReader:            os.Stdin,
 			readEvent:              true,
 			eventMandatory:         true,
@@ -63,18 +69,21 @@ func NewEnterpriseGoHandler(config *PluginConfig, options []ConfigOption,
 		enterprise:         true,
 	}
 
-	goHandler.pluginWorkflowFunction = goHandler.goHandlerWorkflow
-	if err := goHandler.initPlugin(); err != nil {
+	handler.framework.SetWorkflow(handler.workflow)
+	if err := handler.framework.Init(); err != nil {
 		log.Printf("failed to initialize handler plugin: %s", err)
 	}
 
-	return goHandler
+	return handler
 }
 
+// NewEnterpriseGoHandler is deprecated, use NewEnterpriseHandler
+var NewEnterpriseGoHandler = NewEnterpriseHandler
+
 // Executes the handler's workflow
-func (goHandler *GoHandler) goHandlerWorkflow(_ []string) (int, error) {
-	event := goHandler.sensuEvent
-	if goHandler.enterprise {
+func (h *Handler) workflow(_ []string) (int, error) {
+	event := h.framework.GetStdinEvent()
+	if h.enterprise {
 		var licenseFile *licensing.LicenseFile
 		license := os.Getenv("SENSU_LICENSE_FILE")
 		if license == "" {
@@ -91,16 +100,21 @@ func (goHandler *GoHandler) goHandlerWorkflow(_ []string) (int, error) {
 	}
 
 	// Validate input using validateFunction
-	err := goHandler.validationFunction(event)
+	err := h.validationFunction(event)
 	if err != nil {
 		return 1, ErrValidationFailed(err.Error())
 	}
 
 	// Execute handler logic using executeFunction
-	err = goHandler.executeFunction(event)
+	err = h.executeFunction(event)
 	if err != nil {
 		return 1, fmt.Errorf("error executing handler: %s", err)
 	}
 
 	return 0, nil
+}
+
+// Execute is the handler's entry point.
+func (h *Handler) Execute() {
+	h.framework.Execute()
 }

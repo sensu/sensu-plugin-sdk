@@ -10,21 +10,25 @@ import (
 	corev2 "github.com/sensu/sensu-go/api/core/v2"
 )
 
-type GoMutator struct {
-	basePlugin
+// Mutator is the framework for writing sensu mutators.
+type Mutator struct {
+	framework          pluginFramework
 	out                io.Writer
 	validationFunction func(event *corev2.Event) error
 	executeFunction    func(event *corev2.Event) (*corev2.Event, error)
 }
 
-func NewGoMutator(config *PluginConfig, options []ConfigOption,
+// GoMutator is deprecated, use Mutator
+type GoMutator = Mutator
+
+// NewMutator creates a new mutator.
+func NewMutator(config *PluginConfig, options []ConfigOption,
 	validationFunction func(event *corev2.Event) error,
-	executeFunction func(event *corev2.Event) (*corev2.Event, error)) *GoMutator {
-	goMutator := &GoMutator{
-		basePlugin: basePlugin{
+	executeFunction func(event *corev2.Event) (*corev2.Event, error)) *Mutator {
+	mutator := &Mutator{
+		framework: pluginFramework{
 			config:                 config,
 			options:                options,
-			sensuEvent:             nil,
 			eventReader:            os.Stdin,
 			readEvent:              true,
 			eventMandatory:         true,
@@ -38,23 +42,26 @@ func NewGoMutator(config *PluginConfig, options []ConfigOption,
 		validationFunction: validationFunction,
 		executeFunction:    executeFunction,
 	}
-	goMutator.pluginWorkflowFunction = goMutator.goMutatorWorkflow
-	if err := goMutator.initPlugin(); err != nil {
+	mutator.framework.SetWorkflow(mutator.workflow)
+	if err := mutator.framework.Init(); err != nil {
 		log.Printf("failed to initialize mutator plugin: %s", err)
 	}
-	return goMutator
+	return mutator
 }
 
+// NewGoMutator is deprecated, use NewMutator
+var NewGoMutator = NewMutator
+
 // Executes the handler's workflow
-func (goMutator *GoMutator) goMutatorWorkflow(_ []string) (int, error) {
+func (m *Mutator) workflow(_ []string) (int, error) {
 	// Validate input using validateFunction
-	err := goMutator.validationFunction(goMutator.sensuEvent)
+	err := m.validationFunction(m.framework.GetStdinEvent())
 	if err != nil {
 		return 1, ErrValidationFailed(err.Error())
 	}
 
 	// Execute handler logic using executeFunction
-	event, err := goMutator.executeFunction(goMutator.sensuEvent)
+	event, err := m.executeFunction(m.framework.GetStdinEvent())
 	if err != nil {
 		return 1, fmt.Errorf("error executing mutator: %s", err)
 	}
@@ -65,10 +72,15 @@ func (goMutator *GoMutator) goMutatorWorkflow(_ []string) (int, error) {
 			return 1, fmt.Errorf("error marshaling output event to json: %s", err)
 		}
 
-		_, _ = fmt.Fprintf(goMutator.out, "%s", string(eventBytes))
+		_, _ = fmt.Fprintf(m.out, "%s", string(eventBytes))
 	} else {
-		_, _ = fmt.Fprint(goMutator.out, "{}")
+		_, _ = fmt.Fprint(m.out, "{}")
 	}
 
 	return 0, err
+}
+
+// Execute is the mutator's entry point.
+func (m *Mutator) Execute() {
+	m.framework.Execute()
 }
