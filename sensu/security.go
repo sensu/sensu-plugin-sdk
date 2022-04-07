@@ -20,16 +20,16 @@ type SecurityConfig struct {
 // SensuSecurityOptions adds the following flags to a plugin:
 //   --sensu-ca-cert
 //   --sensu-insecure-skip-verify
-func SensuSecurityOptions(config *SecurityConfig) []*PluginConfigOption {
-	return []*PluginConfigOption{
-		{
+func SensuSecurityOptions(config *SecurityConfig) []ConfigOption {
+	return []ConfigOption{
+		&PluginConfigOption[string]{
 			Value:    &config.CACertificate,
 			Path:     "sensu-ca-cert",
 			Env:      "SENSU_CA_CERT",
 			Argument: "sensu-ca-cert",
 			Usage:    "--sensu-ca-cert /etc/ssl/self-signed-ca.crt",
 		},
-		{
+		&PluginConfigOption[bool]{
 			Value:    &config.InsecureSkipVerify,
 			Path:     "sensu-insecure-skip-verify",
 			Env:      "SENSU_INSECURE_SKIP_VERIFY",

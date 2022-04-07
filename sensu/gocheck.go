@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/sensu/sensu-go/types"
+	corev2 "github.com/sensu/sensu-go/api/core/v2"
 )
 
 const (
@@ -17,13 +17,13 @@ const (
 
 type GoCheck struct {
 	basePlugin
-	validationFunction func(event *types.Event) (int, error)
-	executeFunction    func(event *types.Event) (int, error)
+	validationFunction func(event *corev2.Event) (int, error)
+	executeFunction    func(event *corev2.Event) (int, error)
 }
 
-func NewGoCheck(config *PluginConfig, options []*PluginConfigOption,
-	validationFunction func(*types.Event) (int, error),
-	executeFunction func(*types.Event) (int, error), readEvent bool) *GoCheck {
+func NewGoCheck(config *PluginConfig, options []ConfigOption,
+	validationFunction func(*corev2.Event) (int, error),
+	executeFunction func(*corev2.Event) (int, error), readEvent bool) *GoCheck {
 	check := &GoCheck{
 		basePlugin: basePlugin{
 			config:                 config,

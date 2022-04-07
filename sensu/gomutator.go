@@ -7,19 +7,19 @@ import (
 	"log"
 	"os"
 
-	"github.com/sensu/sensu-go/types"
+	corev2 "github.com/sensu/sensu-go/api/core/v2"
 )
 
 type GoMutator struct {
 	basePlugin
 	out                io.Writer
-	validationFunction func(event *types.Event) error
-	executeFunction    func(event *types.Event) (*types.Event, error)
+	validationFunction func(event *corev2.Event) error
+	executeFunction    func(event *corev2.Event) (*corev2.Event, error)
 }
 
-func NewGoMutator(config *PluginConfig, options []*PluginConfigOption,
-	validationFunction func(event *types.Event) error,
-	executeFunction func(event *types.Event) (*types.Event, error)) *GoMutator {
+func NewGoMutator(config *PluginConfig, options []ConfigOption,
+	validationFunction func(event *corev2.Event) error,
+	executeFunction func(event *corev2.Event) (*corev2.Event, error)) *GoMutator {
 	goMutator := &GoMutator{
 		basePlugin: basePlugin{
 			config:                 config,

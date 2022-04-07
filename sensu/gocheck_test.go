@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/sensu/sensu-go/types"
+	corev2 "github.com/sensu/sensu-go/api/core/v2"
 )
 
 type checkValues struct {
@@ -23,17 +23,17 @@ var (
 		Keyspace: "sensu.io/plugins/segp/config",
 	}
 
-	checkOption1 = defaultOption1
-	checkOption2 = defaultOption2
-	checkOption3 = defaultOption3
+	checkOption1 = stringOpt
+	checkOption2 = uint64Opt
+	checkOption3 = boolOpt
 )
 
 func TestNewGoCheck(t *testing.T) {
 	values := &checkValues{}
 	options := getCheckOptions(values)
-	goCheck := NewGoCheck(&defaultCheckConfig, options, func(_ *types.Event) (int, error) {
+	goCheck := NewGoCheck(&defaultCheckConfig, options, func(_ *corev2.Event) (int, error) {
 		return 0, nil
-	}, func(_ *types.Event) (int, error) {
+	}, func(_ *corev2.Event) (int, error) {
 		return 0, nil
 	}, false)
 
@@ -48,7 +48,7 @@ func TestNewGoCheck(t *testing.T) {
 	assert.Equal(t, os.Stdin, goCheck.eventReader)
 }
 
-func getCheckOptions(values *checkValues) []*PluginConfigOption {
+func getCheckOptions(values *checkValues) []ConfigOption {
 	option1 := checkOption1
 	option2 := checkOption2
 	option3 := checkOption3
@@ -61,5 +61,5 @@ func getCheckOptions(values *checkValues) []*PluginConfigOption {
 		option2.Value = nil
 		option3.Value = nil
 	}
-	return []*PluginConfigOption{&option1, &option2, &option3}
+	return []ConfigOption{&option1, &option2, &option3}
 }

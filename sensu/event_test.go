@@ -1,21 +1,21 @@
 package sensu
 
 import (
-	"github.com/sensu/sensu-go/types"
+	corev2 "github.com/sensu/sensu-go/api/core/v2"
 	"github.com/stretchr/testify/assert"
 
 	"testing"
 )
 
 func TestValidEvent_EventKey(t *testing.T) {
-	event := &types.Event{
-		Entity: &types.Entity{
-			ObjectMeta: types.ObjectMeta{
+	event := &corev2.Event{
+		Entity: &corev2.Entity{
+			ObjectMeta: corev2.ObjectMeta{
 				Name: "EntityName",
 			},
 		},
-		Check: &types.Check{
-			ObjectMeta: types.ObjectMeta{
+		Check: &corev2.Check{
+			ObjectMeta: corev2.ObjectMeta{
 				Name: "CheckName",
 			},
 		},
@@ -26,10 +26,10 @@ func TestValidEvent_EventKey(t *testing.T) {
 }
 
 func TestEmptyEntityName_EventKey(t *testing.T) {
-	event := &types.Event{
-		Entity: &types.Entity{},
-		Check: &types.Check{
-			ObjectMeta: types.ObjectMeta{
+	event := &corev2.Event{
+		Entity: &corev2.Entity{},
+		Check: &corev2.Check{
+			ObjectMeta: corev2.ObjectMeta{
 				Name: "CheckName",
 			},
 		},
@@ -40,13 +40,13 @@ func TestEmptyEntityName_EventKey(t *testing.T) {
 }
 
 func TestEmptyCheckName_EventKey(t *testing.T) {
-	event := &types.Event{
-		Entity: &types.Entity{
-			ObjectMeta: types.ObjectMeta{
+	event := &corev2.Event{
+		Entity: &corev2.Entity{
+			ObjectMeta: corev2.ObjectMeta{
 				Name: "EntityName",
 			},
 		},
-		Check: &types.Check{},
+		Check: &corev2.Check{},
 	}
 
 	eventKey := EventKey(event)
@@ -54,9 +54,9 @@ func TestEmptyCheckName_EventKey(t *testing.T) {
 }
 
 func TestNilEntity_EventKey(t *testing.T) {
-	event := &types.Event{
-		Check: &types.Check{
-			ObjectMeta: types.ObjectMeta{
+	event := &corev2.Event{
+		Check: &corev2.Check{
+			ObjectMeta: corev2.ObjectMeta{
 				Name: "CheckName",
 			},
 		},
@@ -67,9 +67,9 @@ func TestNilEntity_EventKey(t *testing.T) {
 }
 
 func TestNilCheck_EventKey(t *testing.T) {
-	event := &types.Event{
-		Entity: &types.Entity{
-			ObjectMeta: types.ObjectMeta{
+	event := &corev2.Event{
+		Entity: &corev2.Entity{
+			ObjectMeta: corev2.ObjectMeta{
 				Name: "EntityName",
 			},
 		},
@@ -85,14 +85,14 @@ func TestNullEvent_EventKey(t *testing.T) {
 }
 
 func TestValidEventZeroTrim_EventSummaryWithTrim(t *testing.T) {
-	event := &types.Event{
-		Entity: &types.Entity{
-			ObjectMeta: types.ObjectMeta{
+	event := &corev2.Event{
+		Entity: &corev2.Entity{
+			ObjectMeta: corev2.ObjectMeta{
 				Name: "EntityName",
 			},
 		},
-		Check: &types.Check{
-			ObjectMeta: types.ObjectMeta{
+		Check: &corev2.Check{
+			ObjectMeta: corev2.ObjectMeta{
 				Name: "CheckName",
 			},
 			Output: "CheckOutput",
@@ -104,14 +104,14 @@ func TestValidEventZeroTrim_EventSummaryWithTrim(t *testing.T) {
 }
 
 func TestValidEventNoTrim_EventSummaryWithTrim(t *testing.T) {
-	event := &types.Event{
-		Entity: &types.Entity{
-			ObjectMeta: types.ObjectMeta{
+	event := &corev2.Event{
+		Entity: &corev2.Entity{
+			ObjectMeta: corev2.ObjectMeta{
 				Name: "EntityName",
 			},
 		},
-		Check: &types.Check{
-			ObjectMeta: types.ObjectMeta{
+		Check: &corev2.Check{
+			ObjectMeta: corev2.ObjectMeta{
 				Name: "CheckName",
 			},
 			Output: "CheckOutput",
@@ -123,14 +123,14 @@ func TestValidEventNoTrim_EventSummaryWithTrim(t *testing.T) {
 }
 
 func TestValidEventWithTrim_EventSummaryWithTrim(t *testing.T) {
-	event := &types.Event{
-		Entity: &types.Entity{
-			ObjectMeta: types.ObjectMeta{
+	event := &corev2.Event{
+		Entity: &corev2.Entity{
+			ObjectMeta: corev2.ObjectMeta{
 				Name: "EntityName",
 			},
 		},
-		Check: &types.Check{
-			ObjectMeta: types.ObjectMeta{
+		Check: &corev2.Check{
+			ObjectMeta: corev2.ObjectMeta{
 				Name: "CheckName",
 			},
 			Output: "CheckOutput withaverylongstringthatwillbetruncatedtoonehundresscharactertomakesurethedestinationsystendoesntoverflow",
@@ -147,14 +147,14 @@ func TestValidEventWithTrim_EventSummaryWithTrim(t *testing.T) {
 }
 
 func TestEmptyOutputNoTrim_EventSummaryWithTrim(t *testing.T) {
-	event := &types.Event{
-		Entity: &types.Entity{
-			ObjectMeta: types.ObjectMeta{
+	event := &corev2.Event{
+		Entity: &corev2.Entity{
+			ObjectMeta: corev2.ObjectMeta{
 				Name: "EntityName",
 			},
 		},
-		Check: &types.Check{
-			ObjectMeta: types.ObjectMeta{
+		Check: &corev2.Check{
+			ObjectMeta: corev2.ObjectMeta{
 				Name: "CheckName",
 			},
 		},
@@ -165,9 +165,9 @@ func TestEmptyOutputNoTrim_EventSummaryWithTrim(t *testing.T) {
 }
 
 func TestNilCheck_EventSummaryWithTrim(t *testing.T) {
-	event := &types.Event{
-		Entity: &types.Entity{
-			ObjectMeta: types.ObjectMeta{
+	event := &corev2.Event{
+		Entity: &corev2.Entity{
+			ObjectMeta: corev2.ObjectMeta{
 				Name: "EntityName",
 			},
 		},
@@ -185,14 +185,14 @@ func TestNilEvent_EventSummaryWithTrim(t *testing.T) {
 }
 
 func TestEventSummary(t *testing.T) {
-	event := &types.Event{
-		Entity: &types.Entity{
-			ObjectMeta: types.ObjectMeta{
+	event := &corev2.Event{
+		Entity: &corev2.Entity{
+			ObjectMeta: corev2.ObjectMeta{
 				Name: "EntityName",
 			},
 		},
-		Check: &types.Check{
-			ObjectMeta: types.ObjectMeta{
+		Check: &corev2.Check{
+			ObjectMeta: corev2.ObjectMeta{
 				Name: "CheckName",
 			},
 			Output: "CheckOutput",
@@ -204,14 +204,14 @@ func TestEventSummary(t *testing.T) {
 }
 
 func Test_FormattedMessage(t *testing.T) {
-	event := &types.Event{
-		Entity: &types.Entity{
-			ObjectMeta: types.ObjectMeta{
+	event := &corev2.Event{
+		Entity: &corev2.Entity{
+			ObjectMeta: corev2.ObjectMeta{
 				Name: "EntityName",
 			},
 		},
-		Check: &types.Check{
-			ObjectMeta: types.ObjectMeta{
+		Check: &corev2.Check{
+			ObjectMeta: corev2.ObjectMeta{
 				Name: "CheckName",
 			},
 			Output: "CheckOutput",
@@ -234,9 +234,9 @@ func Test_FormattedMessage(t *testing.T) {
 }
 
 func TestNilCheck_FormattedMessage(t *testing.T) {
-	event := &types.Event{
-		Entity: &types.Entity{
-			ObjectMeta: types.ObjectMeta{
+	event := &corev2.Event{
+		Entity: &corev2.Entity{
+			ObjectMeta: corev2.ObjectMeta{
 				Name: "EntityName",
 			},
 		},
@@ -247,9 +247,9 @@ func TestNilCheck_FormattedMessage(t *testing.T) {
 }
 
 func TestNilEntity_FormattedMessage(t *testing.T) {
-	event := &types.Event{
-		Check: &types.Check{
-			ObjectMeta: types.ObjectMeta{
+	event := &corev2.Event{
+		Check: &corev2.Check{
+			ObjectMeta: corev2.ObjectMeta{
 				Name: "CheckName",
 			},
 			Output: "CheckOutput",

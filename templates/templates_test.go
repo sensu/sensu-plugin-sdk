@@ -2,12 +2,13 @@ package templates
 
 import (
 	"encoding/json"
-	"github.com/google/uuid"
-	"github.com/sensu/sensu-go/types"
-	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
+	corev2 "github.com/sensu/sensu-go/api/core/v2"
+	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -21,7 +22,7 @@ var (
 
 // Valid test
 func TestEvalTemplate_Valid(t *testing.T) {
-	event := &types.Event{}
+	event := &corev2.Event{}
 	_ = json.Unmarshal(testEventBytes, event)
 
 	result, err := EvalTemplate("templOk", templateOk, event)
@@ -31,7 +32,7 @@ func TestEvalTemplate_Valid(t *testing.T) {
 
 // Valid test - Time Check
 func TestEvalTemplateUnixTime_Valid(t *testing.T) {
-	event := &types.Event{}
+	event := &corev2.Event{}
 	_ = json.Unmarshal(testEventBytes, event)
 
 	executed := time.Unix(event.Check.Executed, 0).Format("2 Jan 2006 15:04:05")
@@ -42,7 +43,7 @@ func TestEvalTemplateUnixTime_Valid(t *testing.T) {
 
 // Valid test - UUID
 func TestEvalTemplateUUIDValid(t *testing.T) {
-	event := &types.Event{}
+	event := &corev2.Event{}
 	_ = json.Unmarshal(testEventBytes, event)
 
 	uuidFromEvent, _ := uuid.FromBytes(event.ID)
@@ -53,7 +54,7 @@ func TestEvalTemplateUUIDValid(t *testing.T) {
 
 // Valid test - Hostname
 func TestEvalTemplateHostname(t *testing.T) {
-	event := &types.Event{}
+	event := &corev2.Event{}
 	_ = json.Unmarshal(testEventBytes, event)
 
 	hostname, _ := os.Hostname()
@@ -64,7 +65,7 @@ func TestEvalTemplateHostname(t *testing.T) {
 
 // Variable not found
 func TestEvalTemplate_VarNotFound(t *testing.T) {
-	event := &types.Event{}
+	event := &corev2.Event{}
 	_ = json.Unmarshal(testEventBytes, event)
 
 	result, err := EvalTemplate("templOk", templateVarNotFound, event)
@@ -81,7 +82,7 @@ func TestEvalTemplate_NilSource(t *testing.T) {
 
 // Empty template
 func TestEvalTemplate_NilTemplate(t *testing.T) {
-	event := &types.Event{}
+	event := &corev2.Event{}
 	_ = json.Unmarshal(testEventBytes, event)
 
 	result, err := EvalTemplate("templOk", "", event)
@@ -91,7 +92,7 @@ func TestEvalTemplate_NilTemplate(t *testing.T) {
 
 // Invalid template
 func TestEvalTemplate_InvalidTemplate(t *testing.T) {
-	event := &types.Event{}
+	event := &corev2.Event{}
 	_ = json.Unmarshal(testEventBytes, event)
 
 	result, err := EvalTemplate("templOk", templateInvalid, event)

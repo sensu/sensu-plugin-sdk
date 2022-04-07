@@ -79,7 +79,7 @@ is correct `nil` can be returned and the plugin execution will continue.
 To define the validation function use the following signature.
 
 ```Go
-func validateInput(_ *types.Event) error {
+func validateInput(_ *corev2.Event) error {
   // Validate the input here
   return nil
 }
@@ -93,7 +93,7 @@ the logic is executed successfully `nil` should be returned.
 To define the execution function use the following signature.
 
 ```Go
-func executeHandler(event *types.Event) error {
+func executeHandler(event *corev2.Event) error {
   // Handler logic
   return nil
 }
