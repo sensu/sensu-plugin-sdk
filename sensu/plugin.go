@@ -11,6 +11,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/google/go-cmp/cmp"
 	corev2 "github.com/sensu/sensu-go/api/core/v2"
 	"github.com/sensu/sensu-plugin-sdk/version"
 	"github.com/spf13/cobra"
@@ -72,6 +73,19 @@ type PluginConfigOption[T OptionValue] struct {
 
 	// If secret option do not copy Argument value into Default
 	Secret bool
+
+	// Restrict prevents the values listed here from being used. If Restrict
+	// and Allow are both set, the value set of Restrict is ignored. If the
+	// Default value is in the Restrict set, then setting the option value is
+	// required.
+	Restrict []T
+
+	// Allow prevents using values other than the ones listed here. The Default
+	// value is always implicitly part of the allowed set, regardless of what
+	// the value of Allow is. If Allow is set, then the values listed in
+	// Restrict are ignored. If Allow is not set, or is set to an empty slice,
+	// then Restrict is consulted.
+	Allow []T
 }
 
 // PluginConfig defines the base plugin configuration.
@@ -289,7 +303,15 @@ func validateEvent(event *corev2.Event) error {
 
 // SetValue sets the configuration value based on either a raw string or
 // json-encoded string.
-func (p *PluginConfigOption[T]) SetValue(valueStr string) error {
+func (p *PluginConfigOption[T]) SetValue(valueStr string) (err error) {
+	if p.Value == nil {
+		return errors.New("PluginConfigOption.Value not set!")
+	}
+	defer func() {
+		if err == nil {
+			err = p.validateAllowRestrict()
+		}
+	}()
 	switch value := (interface{}(p.Value)).(type) {
 	case *[]string:
 		if err := json.Unmarshal([]byte(valueStr), value); err == nil {
@@ -303,6 +325,26 @@ func (p *PluginConfigOption[T]) SetValue(valueStr string) error {
 	default:
 		return json.Unmarshal([]byte(valueStr), value)
 	}
+}
+
+func (p *PluginConfigOption[T]) validateAllowRestrict() error {
+	if len(p.Allow) > 0 {
+		allow := append(p.Allow, p.Default)
+		for _, value := range allow {
+			if cmp.Equal(value, *p.Value) {
+				return nil
+			}
+		}
+		return fmt.Errorf("%s: value not one of %v", p.Argument, p.Allow)
+	}
+	if len(p.Restrict) > 0 {
+		for _, value := range p.Restrict {
+			if cmp.Equal(value, *p.Value) {
+				return fmt.Errorf("%s: value not allowed to be %v", p.Argument, value)
+			}
+		}
+	}
+	return nil
 }
 
 // SetAnnotationValue sets the option value based on a prefix indicated by

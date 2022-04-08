@@ -116,3 +116,79 @@ func clearEnvironment() {
 	_ = os.Unsetenv("ENV_2")
 	_ = os.Unsetenv("ENV_3")
 }
+
+func TestSetOptionValueAllow(t *testing.T) {
+	var value string
+	option := PluginConfigOption[string]{
+		Argument:  "foobar",
+		Default:   "default",
+		Env:       "ENV_1",
+		Path:      "path1",
+		Shorthand: "d",
+		Usage:     "First argument",
+		Secret:    true,
+		Allow:     []string{"allowed"},
+		Value:     &value,
+	}
+	if err := option.SetValue("default"); err != nil {
+		t.Errorf("expected nil error, got %v", err)
+	}
+	if err := option.SetValue("allowed"); err != nil {
+		t.Errorf("expected nil error, got %v", err)
+	}
+	if err := option.SetValue(""); err == nil {
+		t.Error("expected non-nil error")
+	}
+	if err := option.SetValue("nein"); err == nil {
+		t.Error("expected non-nil error")
+	}
+}
+
+func TestSetOptionvalueRestrict(t *testing.T) {
+	var value string
+	option := PluginConfigOption[string]{
+		Argument:  "foobar",
+		Default:   "default",
+		Env:       "ENV_1",
+		Path:      "path1",
+		Shorthand: "d",
+		Usage:     "First argument",
+		Secret:    true,
+		Restrict:  []string{"restricted"},
+		Value:     &value,
+	}
+	if err := option.SetValue("good"); err != nil {
+		t.Errorf("expected nil error, got %s", err)
+	}
+	if err := option.SetValue("restricted"); err == nil {
+		t.Error("expected non-nil error")
+	}
+}
+
+func TestSetOptionValueAllowAndRestrict(t *testing.T) {
+	var value string
+	option := PluginConfigOption[string]{
+		Argument:  "foobar",
+		Default:   "default",
+		Env:       "ENV_1",
+		Path:      "path1",
+		Shorthand: "d",
+		Usage:     "First argument",
+		Secret:    true,
+		Allow:     []string{"allowed"},
+		Restrict:  []string{"allowed"},
+		Value:     &value,
+	}
+	if err := option.SetValue("default"); err != nil {
+		t.Errorf("expected nil error, got %v", err)
+	}
+	if err := option.SetValue("allowed"); err != nil {
+		t.Errorf("expected nil error, got %v", err)
+	}
+	if err := option.SetValue(""); err == nil {
+		t.Error("expected non-nil error")
+	}
+	if err := option.SetValue("nein"); err == nil {
+		t.Error("expected non-nil error")
+	}
+}
