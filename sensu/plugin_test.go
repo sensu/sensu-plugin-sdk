@@ -35,6 +35,34 @@ func TestSetOptionValue_Slice(t *testing.T) {
 	assert.Equal(t, []string{"abc"}, finalValue)
 }
 
+func TestSetOptionValue_SliceJSON(t *testing.T) {
+	finalValue := []string{"def"}
+	option := stringSliceOpt
+	option.Value = &finalValue
+	err := option.SetValue(`["abc"]`)
+	assert.Nil(t, err)
+	assert.Equal(t, []string{"abc"}, finalValue)
+}
+
+func TestSetOptionValue_IntSlice(t *testing.T) {
+	finalValue := []int{42}
+	option := intSliceOpt
+	option.Value = &finalValue
+	err := option.SetValue(`[42]`)
+	assert.Nil(t, err)
+	assert.Equal(t, []int{42}, finalValue)
+}
+
+func TestSetOptionValue_Map(t *testing.T) {
+	finalValue := map[string]string{"abc": "def"}
+	option := stringMapOpt
+	option.Value = &finalValue
+	err := option.SetValue(`{"abc":"def"}`)
+	assert.Nil(t, err)
+	assert.Equal(t, map[string]string{"abc": "def"}, finalValue)
+
+}
+
 func TestSetOptionValue_EmptySlice(t *testing.T) {
 	finalValue := []string{"def"}
 	option := stringSliceOpt
@@ -189,6 +217,185 @@ func TestSetOptionValueAllowAndRestrict(t *testing.T) {
 		t.Error("expected non-nil error")
 	}
 	if err := option.SetValue("nein"); err == nil {
+		t.Error("expected non-nil error")
+	}
+}
+
+func TestSetSliceOptionValueAllow(t *testing.T) {
+	var value []string
+	option := SlicePluginConfigOption[string]{
+		Argument:  "foobar",
+		Default:   []string{"default"},
+		Env:       "ENV_1",
+		Path:      "path1",
+		Shorthand: "d",
+		Usage:     "First argument",
+		Secret:    true,
+		Allow:     []string{"allowed"},
+		Value:     &value,
+	}
+	if err := option.SetValue("default"); err != nil {
+		t.Errorf("expected nil error, got %v", err)
+	}
+	if err := option.SetValue(`["default"]`); err != nil {
+		t.Errorf("expected nil error, got %v", err)
+	}
+	if err := option.SetValue("allowed"); err != nil {
+		t.Errorf("expected nil error, got %v", err)
+	}
+	if err := option.SetValue(`["allowed"]`); err != nil {
+		t.Errorf("expected nil error, got %v", err)
+	}
+	if err := option.SetValue(`[""]`); err == nil {
+		t.Error("expected non-nil error")
+	}
+	if err := option.SetValue(""); err == nil {
+		t.Error("expected non-nil error")
+	}
+	if err := option.SetValue("nein"); err == nil {
+		t.Error("expected non-nil error")
+	}
+	if err := option.SetValue(`["nein"]`); err == nil {
+		t.Error("expected non-nil error")
+	}
+}
+
+func TestSetSliceOptionvalueRestrict(t *testing.T) {
+	var value []string
+	option := SlicePluginConfigOption[string]{
+		Argument:  "foobar",
+		Default:   []string{"default"},
+		Env:       "ENV_1",
+		Path:      "path1",
+		Shorthand: "d",
+		Usage:     "First argument",
+		Secret:    true,
+		Restrict:  []string{"restricted"},
+		Value:     &value,
+	}
+	if err := option.SetValue("good"); err != nil {
+		t.Errorf("expected nil error, got %s", err)
+	}
+	if err := option.SetValue(`["good"]`); err != nil {
+		t.Errorf("expected nil error, got %s", err)
+	}
+	if err := option.SetValue("restricted"); err == nil {
+		t.Error("expected non-nil error")
+	}
+	if err := option.SetValue(`["restricted"]`); err == nil {
+		t.Error("expected non-nil error")
+	}
+}
+
+func TestSetSliceOptionValueAllowAndRestrict(t *testing.T) {
+	var value []string
+	option := SlicePluginConfigOption[string]{
+		Argument:  "foobar",
+		Default:   []string{"default"},
+		Env:       "ENV_1",
+		Path:      "path1",
+		Shorthand: "d",
+		Usage:     "First argument",
+		Secret:    true,
+		Allow:     []string{"allowed"},
+		Restrict:  []string{"allowed"},
+		Value:     &value,
+	}
+	if err := option.SetValue("default"); err != nil {
+		t.Errorf("expected nil error, got %v", err)
+	}
+	if err := option.SetValue(`["default"]`); err != nil {
+		t.Errorf("expected nil error, got %v", err)
+	}
+	if err := option.SetValue("allowed"); err != nil {
+		t.Errorf("expected nil error, got %v", err)
+	}
+	if err := option.SetValue(`["allowed"]`); err != nil {
+		t.Errorf("expected nil error, got %v", err)
+	}
+	if err := option.SetValue(""); err == nil {
+		t.Error("expected non-nil error")
+	}
+	if err := option.SetValue(`"[]"`); err == nil {
+		t.Error("expected non-nil error")
+	}
+	if err := option.SetValue("nein"); err == nil {
+		t.Error("expected non-nil error")
+	}
+	if err := option.SetValue(`["nein"]`); err == nil {
+		t.Error("expected non-nil error")
+	}
+}
+
+func TestSetMapOptionValueAllow(t *testing.T) {
+	var value map[string]string
+	option := MapPluginConfigOption[string]{
+		Argument:  "foobar",
+		Default:   map[string]string{"key": "default"},
+		Env:       "ENV_1",
+		Path:      "path1",
+		Shorthand: "d",
+		Usage:     "First argument",
+		Secret:    true,
+		Allow:     map[string]string{"key": "allowed"},
+		Value:     &value,
+	}
+	if err := option.SetValue(`{"key":"default"}`); err != nil {
+		t.Errorf("expected nil error, got %v", err)
+	}
+	if err := option.SetValue(`{"key":"allowed"}`); err != nil {
+		t.Errorf("expected nil error, got %v", err)
+	}
+	if err := option.SetValue(`{"key":"notallowed"}`); err == nil {
+		t.Error("expected non-nil error")
+	}
+	if err := option.SetValue(`{"quay":"allowed"}`); err == nil {
+		t.Error("expected non-nil error")
+	}
+}
+
+func TestSetMapOptionvalueRestrict(t *testing.T) {
+	var value map[string]string
+	option := MapPluginConfigOption[string]{
+		Argument:  "foobar",
+		Default:   map[string]string{"key": "default"},
+		Env:       "ENV_1",
+		Path:      "path1",
+		Shorthand: "d",
+		Usage:     "First argument",
+		Secret:    true,
+		Restrict:  map[string]string{"key": "restricted"},
+		Value:     &value,
+	}
+	if err := option.SetValue(`{"key":"good"}`); err != nil {
+		t.Errorf("expected nil error, got %s", err)
+	}
+	if err := option.SetValue(`{"key":"restricted"}`); err == nil {
+		t.Error("expected non-nil error")
+	}
+}
+
+func TestSetMapOptionValueAllowAndRestrict(t *testing.T) {
+	var value map[string]string
+	option := MapPluginConfigOption[string]{
+		Argument:  "foobar",
+		Default:   map[string]string{"key": "default"},
+		Env:       "ENV_1",
+		Path:      "path1",
+		Shorthand: "d",
+		Usage:     "First argument",
+		Secret:    true,
+		Allow:     map[string]string{"key": "allowed"},
+		Restrict:  map[string]string{"key": "allowed"},
+		Value:     &value,
+	}
+	if err := option.SetValue(`{"key":"default"}`); err != nil {
+		t.Errorf("expected nil error, got %v", err)
+	}
+	if err := option.SetValue(`{"key":"allowed"}`); err != nil {
+		t.Errorf("expected nil error, got %v", err)
+	}
+	if err := option.SetValue(`{"key":"nein"}`); err == nil {
 		t.Error("expected non-nil error")
 	}
 }

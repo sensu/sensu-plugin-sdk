@@ -9,7 +9,7 @@ require (
 	github.com/sensu/sensu-go/api/core/v2 v2.9.1-alpha
 	github.com/sensu/sensu-go/types v0.9.1-alpha2
 	github.com/sensu/sensu-licensing v0.1.2
-	github.com/spf13/cobra v1.0.0
+	github.com/spf13/cobra v1.4.0
 	github.com/spf13/viper v1.7.0
 	github.com/stretchr/testify v1.6.0
 )
@@ -38,7 +38,7 @@ require (
 	github.com/spf13/afero v1.1.2 // indirect
 	github.com/spf13/cast v1.3.0 // indirect
 	github.com/spf13/jwalterweatherman v1.0.0 // indirect
-	github.com/spf13/pflag v1.0.3 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
 	go.etcd.io/etcd/api/v3 v3.5.0 // indirect
 	golang.org/x/net v0.0.0-20210525063256-abc453219eb5 // indirect

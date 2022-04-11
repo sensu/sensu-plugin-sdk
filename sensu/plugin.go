@@ -39,7 +39,100 @@ type ConfigOption interface {
 // OptionValue is a type constraint that creates a compile-time guard against
 // creating a PluginConfigOption with an unsupported data type.
 type OptionValue interface {
-	~int | ~int32 | ~int64 | ~uint | ~uint32 | ~uint64 | ~float32 | ~float64 | ~bool | ~string | ~map[string]string | ~[]string
+	~int | ~int32 | ~int64 | ~uint | ~uint32 | ~uint64 | ~float32 | ~float64 | ~bool | ~string
+}
+
+// SliceOptionValue is like OptionValue but applies to SlicePluginConfigOption.
+type SliceOptionValue interface {
+	~int | ~int32 | ~int64 | ~uint | ~float32 | ~float64 | ~bool | ~string
+}
+
+// MapOptionValue is like OptionValue but applies to MapPluginConfigOption.
+type MapOptionValue interface {
+	~int | ~int64 | ~string
+}
+
+// SlicePluginConfigOption is like PluginConfigOption but works with slices of T.
+type SlicePluginConfigOption[T OptionValue] struct {
+	// Value is the value to read the configured flag or environment variable into.
+	// It's expected that Value is non-nil.
+	Value *[]T
+
+	// Path is the path to the Sensu annotation to consult when parsing config.
+	Path string
+
+	// Env is the environment variable to consult when parsing config.
+	Env string
+
+	// Argument is the command line argument to consult when parsing config.
+	Argument string
+
+	// Shorthand is the shorthand command line argument to consult when parsing config.
+	Shorthand string
+
+	// Default is the default value of the config option.
+	Default []T
+
+	// Usage adds help context to the command-line flag.
+	Usage string
+
+	// If secret option do not copy Argument value into Default
+	Secret bool
+
+	// Restrict prevents the values listed here from being used. If Restrict
+	// and Allow are both set, the value set of Restrict is ignored. If the
+	// Default value is in the Restrict set, then setting the option value is
+	// required.
+	Restrict []T
+
+	// Allow prevents using values other than the ones listed here. The Default
+	// value is always implicitly part of the allowed set, regardless of what
+	// the value of Allow is. If Allow is set, then the values listed in
+	// Restrict are ignored. If Allow is not set, or is set to an empty map,
+	// then Restrict is consulted.
+	Allow []T
+}
+
+// MapPluginConfigOption is like PluginConfigOption, but permits using maps.
+// The map keys are strings.
+type MapPluginConfigOption[T OptionValue] struct {
+	// Value is the value to read the configured flag or environment variable into.
+	// It's expected that Value is non-nil
+	Value *map[string]T
+
+	// Path is the path to the Sensu annotation to consult when parsing config.
+	Path string
+
+	// Env is the environment variable to consult when parsing config.
+	Env string
+
+	// Argument is the command line argument to consult when parsing config.
+	Argument string
+
+	// Shorthand is the shorthand command line argument to consult when parsing config.
+	Shorthand string
+
+	// Default is the default value of the config option.
+	Default map[string]T
+
+	// Usage adds help context to the command-line flag.
+	Usage string
+
+	// If secret option do not copy Argument value into Default
+	Secret bool
+
+	// Restrict prevents the values listed here from being used. If Restrict
+	// and Allow are both set, the value set of Restrict is ignored. If the
+	// Default value is in the Restrict set, then setting the option value is
+	// required.
+	Restrict map[string]T
+
+	// Allow prevents using values other than the ones listed here. The Default
+	// value is always implicitly part of the allowed set, regardless of what
+	// the value of Allow is. If Allow is set, then the values listed in
+	// Restrict are ignored. If Allow is not set, or is set to an empty map,
+	// then Restrict is consulted.
+	Allow map[string]T
 }
 
 // PluginConfigOption defines an option to be read by the plugin on startup. An
@@ -244,6 +337,102 @@ func (p *PluginConfigOption[T]) SetupFlag(cmd *cobra.Command) error {
 	return nil
 }
 
+// integer overflow isn't real, it can't hurt you
+func castIntSlice[T int32 | int64 | uint32 | uint64 | uint](values []int) []T {
+	result := make([]T, len(values))
+	for i := range values {
+		result[i] = T(values[i])
+	}
+	return result
+}
+
+// SetupFlag sets up the option's command line flag, and also binds the
+// associated environment variable, and default value.
+func (p *SlicePluginConfigOption[T]) SetupFlag(cmd *cobra.Command) error {
+	if len(p.Argument) == 0 {
+		return nil
+	}
+	if p.Value == nil {
+		return errors.New("setup flag: couldn't write into nil value")
+	}
+	err := viper.BindEnv(p.Argument, p.Env)
+	if err != nil {
+		return err
+	}
+	viper.SetDefault(p.Argument, p.Default)
+	switch value := (interface{}(p.Value)).(type) {
+	case *[]bool:
+		cmd.Flags().BoolSliceVarP(value, p.Argument, p.Shorthand, nil, p.Usage) // FIXME: viper lacks GetBoolSlice function
+	case *[]int:
+		cmd.Flags().IntSliceVarP(value, p.Argument, p.Shorthand, viper.GetIntSlice(p.Argument), p.Usage)
+	case *[]int32:
+		cmd.Flags().Int32SliceVarP(value, p.Argument, p.Shorthand, castIntSlice[int32](viper.GetIntSlice(p.Argument)), p.Usage)
+	case *[]int64:
+		cmd.Flags().Int64SliceVarP(value, p.Argument, p.Shorthand, castIntSlice[int64](viper.GetIntSlice(p.Argument)), p.Usage)
+	case *[]uint:
+		cmd.Flags().UintSliceVarP(value, p.Argument, p.Shorthand, castIntSlice[uint](viper.GetIntSlice(p.Argument)), p.Usage)
+	case *[]float32:
+		cmd.Flags().Float32SliceVarP(value, p.Argument, p.Shorthand, nil, p.Usage) // FIXME: viper lacks GetFloatSlice function
+	case *[]float64:
+		cmd.Flags().Float64SliceVarP(value, p.Argument, p.Shorthand, nil, p.Usage) // FIXME: viper lacks GetFloatSlice function
+	case *[]string:
+		cmd.Flags().StringSliceVarP(value, p.Argument, p.Shorthand, viper.GetStringSlice(p.Argument), p.Usage)
+	default:
+		return errors.New("setup flag: unknown value type")
+	}
+	flag := cmd.Flags().Lookup(p.Argument)
+	// Set empty DefValue string if option is a secret
+	// DefValue is only used for pflag usage message construction
+	if p.Secret {
+		flag.DefValue = ""
+	}
+	return nil
+}
+
+func castMap[T int | int64](m map[string]interface{}) map[string]T {
+	result := make(map[string]T, len(m))
+	for k, v := range m {
+		if value, ok := v.(T); ok {
+			result[k] = value
+		}
+	}
+	return result
+}
+
+// SetupFlag sets up the option's command line flag, and also binds the
+// associated environment variable, and default value.
+func (p *MapPluginConfigOption[T]) SetupFlag(cmd *cobra.Command) error {
+	if len(p.Argument) == 0 {
+		return nil
+	}
+	if p.Value == nil {
+		return errors.New("setup flag: couldn't write into nil value")
+	}
+	err := viper.BindEnv(p.Argument, p.Env)
+	if err != nil {
+		return err
+	}
+	viper.SetDefault(p.Argument, p.Default)
+
+	switch value := (interface{}(p.Value)).(type) {
+	case *map[string]int:
+		cmd.Flags().StringToIntVarP(value, p.Argument, p.Shorthand, castMap[int](viper.GetStringMap(p.Argument)), p.Usage)
+	case *map[string]int64:
+		cmd.Flags().StringToInt64VarP(value, p.Argument, p.Shorthand, castMap[int64](viper.GetStringMap(p.Argument)), p.Usage)
+	case *map[string]string:
+		cmd.Flags().StringToStringVarP(value, p.Argument, p.Shorthand, viper.GetStringMapString(p.Argument), p.Usage)
+	default:
+		return errors.New("setup flag: unknown value type")
+	}
+	flag := cmd.Flags().Lookup(p.Argument)
+	// Set empty DefValue string if option is a secret
+	// DefValue is only used for pflag usage message construction
+	if p.Secret {
+		flag.DefValue = ""
+	}
+	return nil
+}
+
 // GetStdinEvent gets the event that was received on stdin, if any. Can return
 // nil values.
 func (p *pluginFramework) GetStdinEvent() *corev2.Event {
@@ -312,19 +501,98 @@ func (p *PluginConfigOption[T]) SetValue(valueStr string) (err error) {
 			err = p.validateAllowRestrict()
 		}
 	}()
-	switch value := (interface{}(p.Value)).(type) {
-	case *[]string:
-		if err := json.Unmarshal([]byte(valueStr), value); err == nil {
-			return nil
-		}
-		*value = []string{valueStr}
+	if err := json.Unmarshal([]byte(valueStr), p.Value); err == nil {
 		return nil
-	case *string:
+	}
+	if value, ok := (interface{}(p.Value)).(*string); ok {
 		*value = valueStr
 		return nil
-	default:
-		return json.Unmarshal([]byte(valueStr), value)
 	}
+	return fmt.Errorf("invalid value for %T: %v", *p.Value, valueStr)
+}
+
+// SetValue sets the configuration value based on either a raw string or
+// json-encoded string.
+func (p *SlicePluginConfigOption[T]) SetValue(valueStr string) (err error) {
+	if p.Value == nil {
+		return errors.New("PluginConfigOption.Value not set!")
+	}
+	defer func() {
+		if err == nil {
+			err = p.validateAllowRestrict()
+		}
+	}()
+	if err := json.Unmarshal([]byte(valueStr), p.Value); err == nil {
+		return nil
+	}
+	if slice, ok := ((interface{})(p.Value)).(*[]string); ok {
+		*slice = []string{valueStr}
+		return nil
+	}
+	var t T
+	if err := json.Unmarshal([]byte(valueStr), &t); err == nil {
+		*p.Value = []T{t}
+		return nil
+	}
+	return fmt.Errorf("invalid value for %T: %v", *p.Value, valueStr)
+}
+
+// SetValue sets the configuration value based on a json-encoded string.
+func (p *MapPluginConfigOption[T]) SetValue(valueStr string) (err error) {
+	if p.Value == nil {
+		return errors.New("PluginConfigOption.Value not set!")
+	}
+	defer func() {
+		if err == nil {
+			err = p.validateAllowRestrict()
+		}
+	}()
+	return json.Unmarshal([]byte(valueStr), p.Value)
+}
+
+func (p *MapPluginConfigOption[T]) validateAllowRestrict() error {
+	if len(p.Allow) > 0 {
+		for k, v := range *p.Value {
+			if p.Allow[k] != v && p.Default[k] != v {
+				return fmt.Errorf("%s: key %v = value %v not one of %v", p.Argument, k, v, p.Allow)
+			}
+		}
+		return nil
+	}
+
+	for k, v := range *p.Value {
+		if p.Restrict[k] == v {
+			return fmt.Errorf("%s: key %v = value %v not allowed", p.Argument, k, v)
+		}
+	}
+	return nil
+}
+
+func (p *SlicePluginConfigOption[T]) validateAllowRestrict() error {
+	if len(p.Allow) > 0 {
+		allow := append(p.Allow, p.Default...)
+		for _, pvalue := range *p.Value {
+			var found bool
+			for _, value := range allow {
+				if value == pvalue {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return fmt.Errorf("%s: value %v not one of %v", p.Argument, pvalue, p.Allow)
+			}
+		}
+		return nil
+	}
+	for _, pvalue := range *p.Value {
+		for _, value := range p.Restrict {
+			if value == pvalue {
+				return fmt.Errorf("%s: value not allowed to be %v", p.Argument, value)
+			}
+		}
+	}
+	return nil
 }
 
 func (p *PluginConfigOption[T]) validateAllowRestrict() error {
@@ -337,13 +605,12 @@ func (p *PluginConfigOption[T]) validateAllowRestrict() error {
 		}
 		return fmt.Errorf("%s: value not one of %v", p.Argument, p.Allow)
 	}
-	if len(p.Restrict) > 0 {
-		for _, value := range p.Restrict {
-			if cmp.Equal(value, *p.Value) {
-				return fmt.Errorf("%s: value not allowed to be %v", p.Argument, value)
-			}
+	for _, value := range p.Restrict {
+		if cmp.Equal(value, *p.Value) {
+			return fmt.Errorf("%s: value not allowed to be %v", p.Argument, value)
 		}
 	}
+
 	return nil
 }
 
@@ -351,6 +618,60 @@ func (p *PluginConfigOption[T]) validateAllowRestrict() error {
 // keyspace, and an event object. The check annotation will be resolved first,
 // followed by the entity annotation.
 func (p *PluginConfigOption[T]) SetAnnotationValue(keySpace string, event *corev2.Event) (SetAnnotationResult, error) {
+	key := path.Join(keySpace, p.Path)
+	downcase := strings.ToLower(key)
+	keys := []string{downcase, key}
+	var result SetAnnotationResult
+	for _, key := range keys {
+		var value string
+		if event.Check != nil {
+			value, _ = event.Check.Annotations[key]
+			result.CheckAnnotation = len(value) > 0
+		}
+		if value == "" && event.Entity != nil {
+			value, _ = event.Entity.Annotations[key]
+			result.EntityAnnotation = len(value) > 0
+		}
+		if len(value) > 0 {
+			result.AnnotationKey = key
+			result.AnnotationValue = value
+			return result, p.SetValue(value)
+		}
+	}
+	return result, nil
+}
+
+// SetAnnotationValue sets the option value based on a prefix indicated by
+// keyspace, and an event object. The check annotation will be resolved first,
+// followed by the entity annotation.
+func (p *SlicePluginConfigOption[T]) SetAnnotationValue(keySpace string, event *corev2.Event) (SetAnnotationResult, error) {
+	key := path.Join(keySpace, p.Path)
+	downcase := strings.ToLower(key)
+	keys := []string{downcase, key}
+	var result SetAnnotationResult
+	for _, key := range keys {
+		var value string
+		if event.Check != nil {
+			value, _ = event.Check.Annotations[key]
+			result.CheckAnnotation = len(value) > 0
+		}
+		if value == "" && event.Entity != nil {
+			value, _ = event.Entity.Annotations[key]
+			result.EntityAnnotation = len(value) > 0
+		}
+		if len(value) > 0 {
+			result.AnnotationKey = key
+			result.AnnotationValue = value
+			return result, p.SetValue(value)
+		}
+	}
+	return result, nil
+}
+
+// SetAnnotationValue sets the option value based on a prefix indicated by
+// keyspace, and an event object. The check annotation will be resolved first,
+// followed by the entity annotation.
+func (p *MapPluginConfigOption[T]) SetAnnotationValue(keySpace string, event *corev2.Event) (SetAnnotationResult, error) {
 	key := path.Join(keySpace, p.Path)
 	downcase := strings.ToLower(key)
 	keys := []string{downcase, key}

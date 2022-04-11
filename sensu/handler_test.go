@@ -57,9 +57,29 @@ var (
 		Usage:     "Third argument",
 	}
 
-	stringSliceOpt = PluginConfigOption[[]string]{
+	stringSliceOpt = SlicePluginConfigOption[string]{
 		Argument:  "stringslice",
 		Default:   []string{"Default1"},
+		Env:       "ENV_1",
+		Path:      "path1",
+		Shorthand: "d",
+		Usage:     "First argument",
+		Secret:    true,
+	}
+
+	stringMapOpt = MapPluginConfigOption[string]{
+		Argument:  "stringslice",
+		Default:   map[string]string{"default": "yes"},
+		Env:       "ENV_1",
+		Path:      "path1",
+		Shorthand: "d",
+		Usage:     "First argument",
+		Secret:    true,
+	}
+
+	intSliceOpt = SlicePluginConfigOption[int]{
+		Argument:  "intslice",
+		Default:   []int{0},
 		Env:       "ENV_1",
 		Path:      "path1",
 		Shorthand: "d",
