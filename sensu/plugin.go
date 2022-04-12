@@ -53,7 +53,7 @@ type MapOptionValue interface {
 }
 
 // SlicePluginConfigOption is like PluginConfigOption but works with slices of T.
-type SlicePluginConfigOption[T OptionValue] struct {
+type SlicePluginConfigOption[T SliceOptionValue] struct {
 	// Value is the value to read the configured flag or environment variable into.
 	// It's expected that Value is non-nil.
 	Value *[]T
@@ -95,7 +95,7 @@ type SlicePluginConfigOption[T OptionValue] struct {
 
 // MapPluginConfigOption is like PluginConfigOption, but permits using maps.
 // The map keys are strings.
-type MapPluginConfigOption[T OptionValue] struct {
+type MapPluginConfigOption[T MapOptionValue] struct {
 	// Value is the value to read the configured flag or environment variable into.
 	// It's expected that Value is non-nil
 	Value *map[string]T
