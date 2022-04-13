@@ -7,7 +7,7 @@ require (
 	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.32.1
 	github.com/sensu/sensu-go/api/core/v2 v2.9.1-alpha
-	github.com/sensu/sensu-go/types v0.9.1-alpha
+	github.com/sensu/sensu-go/types v0.9.1-alpha2
 	github.com/sensu/sensu-licensing v0.1.2
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/viper v1.7.0

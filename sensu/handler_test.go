@@ -89,14 +89,14 @@ func TestNewGoHandler(t *testing.T) {
 	})
 
 	assert.NotNil(t, goHandler)
-	assert.NotNil(t, goHandler.options)
-	assert.Equal(t, options, goHandler.options)
-	assert.NotNil(t, goHandler.config)
-	assert.Equal(t, &defaultHandlerConfig, goHandler.config)
+	assert.NotNil(t, goHandler.framework.options)
+	assert.Equal(t, options, goHandler.framework.options)
+	assert.NotNil(t, goHandler.framework.config)
+	assert.Equal(t, &defaultHandlerConfig, goHandler.framework.config)
 	assert.NotNil(t, goHandler.validationFunction)
 	assert.NotNil(t, goHandler.executeFunction)
-	assert.Nil(t, goHandler.sensuEvent)
-	assert.Equal(t, os.Stdin, goHandler.eventReader)
+	assert.Nil(t, goHandler.framework.GetStdinEvent())
+	assert.Equal(t, os.Stdin, goHandler.framework.eventReader)
 }
 
 func TestNewGoHandler_NoOptionValue(t *testing.T) {
@@ -111,7 +111,7 @@ func TestNewGoHandler_NoOptionValue(t *testing.T) {
 			return nil
 		})
 
-	goHandler.exitFunction = func(i int) {
+	goHandler.framework.exitFunction = func(i int) {
 		exitStatus = i
 	}
 	goHandler.Execute()
@@ -130,22 +130,22 @@ func goHandlerExecuteUtil(t *testing.T, handlerConfig *PluginConfig, eventFile s
 
 	// Simulate the command line arguments if necessary
 	if len(cmdLineArgs) > 0 {
-		goHandler.cmd.SetArgs(cmdLineArgs)
+		goHandler.framework.cmd.SetArgs(cmdLineArgs)
 	} else {
-		goHandler.cmd.SetArgs([]string{})
+		goHandler.framework.cmd.SetArgs([]string{})
 	}
 
-	goHandler.cmd.SilenceErrors = true
-	goHandler.cmd.SilenceUsage = true
+	goHandler.framework.cmd.SilenceErrors = true
+	goHandler.framework.cmd.SilenceUsage = true
 
 	// Replace stdin reader with file reader and exitFunction with our own so we can know the exit status
 	var exitStatus int
 	var errorStr = ""
-	goHandler.eventReader = getFileReader(eventFile)
-	goHandler.exitFunction = func(i int) {
+	goHandler.framework.eventReader = getFileReader(eventFile)
+	goHandler.framework.exitFunction = func(i int) {
 		exitStatus = i
 	}
-	goHandler.errorLogFunction = func(format string, a ...interface{}) {
+	goHandler.framework.errorLogFunction = func(format string, a ...interface{}) {
 		errorStr = fmt.Sprintf(format, a...)
 	}
 	goHandler.Execute()
@@ -617,7 +617,7 @@ func TestNewGoHandlerEnterprise(t *testing.T) {
 	})
 	assert.True(t, goHandler.enterprise)
 
-	goHandler.exitFunction = func(i int) {
+	goHandler.framework.exitFunction = func(i int) {
 		exitStatus = i
 	}
 	goHandler.Execute()

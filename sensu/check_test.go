@@ -38,14 +38,14 @@ func TestNewGoCheck(t *testing.T) {
 	}, false)
 
 	assert.NotNil(t, goCheck)
-	assert.NotNil(t, goCheck.options)
-	assert.Equal(t, options, goCheck.options)
-	assert.NotNil(t, goCheck.config)
-	assert.Equal(t, &defaultHandlerConfig, goCheck.config)
+	assert.NotNil(t, goCheck.framework.options)
+	assert.Equal(t, options, goCheck.framework.options)
+	assert.NotNil(t, goCheck.framework.config)
+	assert.Equal(t, &defaultHandlerConfig, goCheck.framework.config)
 	assert.NotNil(t, goCheck.validationFunction)
 	assert.NotNil(t, goCheck.executeFunction)
-	assert.Nil(t, goCheck.sensuEvent)
-	assert.Equal(t, os.Stdin, goCheck.eventReader)
+	assert.Nil(t, goCheck.framework.GetStdinEvent())
+	assert.Equal(t, os.Stdin, goCheck.framework.eventReader)
 }
 
 func getCheckOptions(values *checkValues) []ConfigOption {
