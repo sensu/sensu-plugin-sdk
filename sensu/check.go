@@ -15,7 +15,8 @@ const (
 	CheckStateUnknown  = 3
 )
 
-// GoCheck is deprecated, use Check
+// GoCheck is a framework for writing sensu checks.
+// Deprecated: use Check
 type GoCheck = Check
 
 // Check is a framework for writing sensu checks.
@@ -53,7 +54,8 @@ func NewCheck(config *PluginConfig, options []ConfigOption,
 	return check
 }
 
-// NewGoCheck is deprecated, use NewCheck.
+// NewGoCheck creates a new check.
+// Deprecated: use NewCheck
 var NewGoCheck = NewCheck
 
 // Executes the check

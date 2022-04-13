@@ -18,7 +18,8 @@ type Handler struct {
 	enterprise         bool
 }
 
-// GoHandler is deprecated, use Handler
+// GoHandler is a framework for writing Sensu handlers.
+// Deprecated: use Handler instead.
 type GoHandler = Handler
 
 // NewHandler creates a new handler.
@@ -48,7 +49,8 @@ func NewHandler(config *PluginConfig, options []ConfigOption,
 	return handler
 }
 
-// NewGoHandler is deprecated, use NewHandler
+// NewGoHandler creates a new handler.
+// Deprecated: use NewHandler
 var NewGoHandler = NewHandler
 
 // NewEnterpriseHandler is like NewHandler, but requires a valid license.

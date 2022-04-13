@@ -18,7 +18,8 @@ type Mutator struct {
 	executeFunction    func(event *corev2.Event) (*corev2.Event, error)
 }
 
-// GoMutator is deprecated, use Mutator
+// GoMutator is the framework for writing sensu mutators.
+// Deprecated: use Mutator
 type GoMutator = Mutator
 
 // NewMutator creates a new mutator.
@@ -49,7 +50,8 @@ func NewMutator(config *PluginConfig, options []ConfigOption,
 	return mutator
 }
 
-// NewGoMutator is deprecated, use NewMutator
+// NewGoMutator creates a new Mutator.
+// Deprecated: use NewGoMutator
 var NewGoMutator = NewMutator
 
 // Executes the handler's workflow
