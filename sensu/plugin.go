@@ -439,6 +439,10 @@ func (p *pluginFramework) GetStdinEvent() *corev2.Event {
 	return p.sensuEvent
 }
 
+type allowRestrictValidator interface {
+	validateAllowRestrict() error
+}
+
 // cobraExecuteFunction is called by the argument's execute. The configuration overrides will be processed if necessary
 // and the pluginWorkflowFunction function executed
 func (p *pluginFramework) cobraExecuteFunction(args []string) error {
@@ -457,6 +461,15 @@ func (p *pluginFramework) cobraExecuteFunction(args []string) error {
 		if err != nil {
 			p.exitStatus = p.errorExitStatus
 			return err
+		}
+	}
+
+	for _, option := range p.options {
+		if v, ok := option.(allowRestrictValidator); ok {
+			if err := v.validateAllowRestrict(); err != nil {
+				p.exitStatus = p.errorExitStatus
+				return err
+			}
 		}
 	}
 
