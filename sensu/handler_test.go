@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	corev2 "github.com/sensu/sensu-go/api/core/v2"
 	"github.com/stretchr/testify/assert"
 )
@@ -57,9 +58,29 @@ var (
 		Usage:     "Third argument",
 	}
 
-	stringSliceOpt = PluginConfigOption[[]string]{
+	stringSliceOpt = SlicePluginConfigOption[string]{
 		Argument:  "stringslice",
 		Default:   []string{"Default1"},
+		Env:       "ENV_1",
+		Path:      "path1",
+		Shorthand: "d",
+		Usage:     "First argument",
+		Secret:    true,
+	}
+
+	stringMapOpt = MapPluginConfigOption[string]{
+		Argument:  "stringslice",
+		Default:   map[string]string{"default": "yes"},
+		Env:       "ENV_1",
+		Path:      "path1",
+		Shorthand: "d",
+		Usage:     "First argument",
+		Secret:    true,
+	}
+
+	intSliceOpt = SlicePluginConfigOption[int]{
+		Argument:  "intslice",
+		Default:   []int{0},
 		Env:       "ENV_1",
 		Path:      "path1",
 		Shorthand: "d",
@@ -74,6 +95,28 @@ var (
 		Path:      "path2",
 		Shorthand: "e",
 		Usage:     "Second argument",
+	}
+
+	restrictedIntOpt = PluginConfigOption[int]{
+		Argument: "restrictedint",
+		Default:  1234,
+		Env:      "ENV",
+		Path:     "restrictedint",
+		Restrict: []int{4321, 45},
+	}
+
+	restrictedIntSliceOpt = SlicePluginConfigOption[int]{
+		Argument: "restrictedintslice",
+		Env:      "ENV",
+		Path:     "restrictedintslice",
+		Restrict: []int{4321},
+	}
+
+	restrictedIntMapOpt = MapPluginConfigOption[int]{
+		Argument: "restrictedintmap",
+		Env:      "ENV",
+		Path:     "restrictedintmap",
+		Restrict: map[string]int{"value": 45},
 	}
 
 	defaultCmdLineArgs = []string{"--string", "value-arg1", "--uint64", "7531", "--bool=false"}
@@ -97,6 +140,261 @@ func TestNewGoHandler(t *testing.T) {
 	assert.NotNil(t, goHandler.executeFunction)
 	assert.Nil(t, goHandler.framework.GetStdinEvent())
 	assert.Equal(t, os.Stdin, goHandler.framework.eventReader)
+}
+
+func allowRestrictTestUtil(t *testing.T, options []ConfigOption, args []string) (int, error) {
+	t.Helper()
+
+	noOp := func(*corev2.Event) error { return nil }
+
+	handler := NewHandler(&defaultHandlerConfig, options, noOp, noOp)
+
+	handler.framework.cmd.SetArgs(args)
+	handler.framework.cmd.SilenceErrors = true
+	handler.framework.cmd.SilenceUsage = true
+
+	// Replace stdin reader with file reader and exitFunction with our own so we can know the exit status
+	var exitStatus int
+	var err error
+
+	handler.framework.eventReader = getFileReader("test/event-check-override.json")
+	handler.framework.exitFunction = func(i int) {
+		exitStatus = i
+	}
+	handler.framework.errorLogFunction = func(format string, a ...interface{}) {
+		err = fmt.Errorf(format, a...)
+	}
+	handler.Execute()
+
+	return exitStatus, err
+}
+
+func TestAllow(t *testing.T) {
+	var value int
+	opt := PluginConfigOption[int]{
+		Argument: "allowedint",
+		Default:  1234,
+		Env:      "ENV",
+		Allow:    []int{42},
+		Value:    &value,
+	}
+
+	options := []ConfigOption{&opt}
+	status, err := allowRestrictTestUtil(t, options, []string{"--allowedint", "1234"})
+	if err != nil {
+		t.Errorf("unexpected error: %s", err)
+	}
+	if got, want := status, 0; got != want {
+		t.Errorf("unexpected status: got %d, want %d", got, want)
+	}
+	if got, want := value, 1234; got != want {
+		t.Errorf("bad value: got %d, want %d", got, want)
+	}
+	status, err = allowRestrictTestUtil(t, options, []string{"--allowedint", "42"})
+	if err != nil {
+		t.Errorf("unexpected error: %s", err)
+	}
+	if got, want := status, 0; got != want {
+		t.Errorf("unexpected status: got %d, want %d", got, want)
+	}
+	if got, want := value, 42; got != want {
+		t.Errorf("bad value: got %d, want %d", got, want)
+	}
+	status, err = allowRestrictTestUtil(t, options, []string{"--allowedint", "43"})
+	if err == nil {
+		t.Error("expected non-nil error")
+	}
+	if status == 0 {
+		t.Error("expected nonzero status")
+	}
+}
+
+func TestAllowSlice(t *testing.T) {
+	var value []int
+	opt := SlicePluginConfigOption[int]{
+		Argument: "allowedintslice",
+		Default:  []int{1234},
+		Env:      "ENV",
+		Allow:    []int{2345},
+		Value:    &value,
+	}
+
+	options := []ConfigOption{&opt}
+	status, err := allowRestrictTestUtil(t, options, []string{"--allowedintslice", "1234"})
+	if err != nil {
+		t.Errorf("unexpected error: %s", err)
+	}
+	if got, want := status, 0; got != want {
+		t.Errorf("unexpected status: got %d, want %d", got, want)
+	}
+	if got, want := value, []int{1234}; !cmp.Equal(got, want) {
+		t.Error(cmp.Diff(got, want))
+	}
+	status, err = allowRestrictTestUtil(t, options, []string{"--allowedintslice", "2345"})
+	if err != nil {
+		t.Errorf("unexpected error: %s", err)
+	}
+	if got, want := status, 0; got != want {
+		t.Errorf("unexpected status: got %d, want %d", got, want)
+	}
+	if got, want := value, []int{2345}; !cmp.Equal(got, want) {
+		t.Error(cmp.Diff(got, want))
+	}
+	status, err = allowRestrictTestUtil(t, options, []string{"--allowedintslice", "1234,2345"})
+	if err != nil {
+		t.Errorf("unexpected error: %s", err)
+	}
+	if got, want := status, 0; got != want {
+		t.Errorf("unexpected status: got %d, want %d", got, want)
+	}
+	if got, want := value, []int{1234, 2345}; !cmp.Equal(got, want) {
+		t.Error(cmp.Diff(got, want))
+	}
+	status, err = allowRestrictTestUtil(t, options, []string{"--allowedintslice", "1234,42"})
+	if err == nil {
+		t.Error("expected non-nil error")
+	}
+	if status == 0 {
+		t.Error("expected non-zero status")
+	}
+}
+
+func TestAllowMap(t *testing.T) {
+	var value map[string]int
+	opt := MapPluginConfigOption[int]{
+		Argument: "allowedintmap",
+		Default:  map[string]int{"1234": 1234},
+		Env:      "ENV",
+		Allow:    map[string]int{"1234": 2345},
+		Value:    &value,
+	}
+	options := []ConfigOption{&opt}
+	status, err := allowRestrictTestUtil(t, options, []string{"--allowedintmap", "1234=1234"})
+	if err != nil {
+		t.Errorf("unexpected error: %s", err)
+	}
+	if got, want := status, 0; got != want {
+		t.Errorf("unexpected status: got %d, want %d", got, want)
+	}
+	if got, want := value, map[string]int{"1234": 1234}; !cmp.Equal(got, want) {
+		t.Error(cmp.Diff(got, want))
+	}
+	status, err = allowRestrictTestUtil(t, options, []string{"--allowedintmap", "1234=2345"})
+	if err != nil {
+		t.Errorf("unexpected error: %s", err)
+	}
+	if got, want := status, 0; got != want {
+		t.Errorf("unexpected status: got %d, want %d", got, want)
+	}
+	if got, want := value, map[string]int{"1234": 2345}; !cmp.Equal(got, want) {
+		t.Error(cmp.Diff(got, want))
+	}
+	status, err = allowRestrictTestUtil(t, options, []string{"--allowedintmap", "1234=2345,42=45"})
+	if err == nil {
+		t.Error("expected non-nil error")
+	}
+	if status == 0 {
+		t.Error("expected non-zero status")
+	}
+}
+
+func TestRestrict(t *testing.T) {
+	var value int
+	opt := PluginConfigOption[int]{
+		Argument: "allowedint",
+		Default:  1234,
+		Env:      "ENV",
+		Restrict: []int{42},
+		Value:    &value,
+	}
+
+	options := []ConfigOption{&opt}
+	status, err := allowRestrictTestUtil(t, options, []string{"--allowedint", "1234"})
+	if err != nil {
+		t.Errorf("unexpected error: %s", err)
+	}
+	if got, want := status, 0; got != want {
+		t.Errorf("unexpected status: got %d, want %d", got, want)
+	}
+	if got, want := value, 1234; got != want {
+		t.Errorf("bad value: got %d, want %d", got, want)
+	}
+	status, err = allowRestrictTestUtil(t, options, []string{"--allowedint", "1000"})
+	if err != nil {
+		t.Errorf("unexpected error: %s", err)
+	}
+	if got, want := status, 0; got != want {
+		t.Errorf("unexpected status: got %d, want %d", got, want)
+	}
+	if got, want := value, 1000; got != want {
+		t.Errorf("bad value: got %d, want %d", got, want)
+	}
+	status, err = allowRestrictTestUtil(t, options, []string{"--allowedint", "42"})
+	if err == nil {
+		t.Error("expected non-nil error")
+	}
+	if status == 0 {
+		t.Error("expected nonzero status")
+	}
+}
+
+func TestRestrictSlice(t *testing.T) {
+	var value []int
+	opt := SlicePluginConfigOption[int]{
+		Argument: "allowedintslice",
+		Default:  []int{1234},
+		Env:      "ENV",
+		Restrict: []int{2345},
+		Value:    &value,
+	}
+
+	options := []ConfigOption{&opt}
+	status, err := allowRestrictTestUtil(t, options, []string{"--allowedintslice", "1234,4321"})
+	if err != nil {
+		t.Errorf("unexpected error: %s", err)
+	}
+	if got, want := status, 0; got != want {
+		t.Errorf("unexpected status: got %d, want %d", got, want)
+	}
+	if got, want := value, []int{1234, 4321}; !cmp.Equal(got, want) {
+		t.Error(cmp.Diff(got, want))
+	}
+	status, err = allowRestrictTestUtil(t, options, []string{"--allowedintslice", "1234,2345"})
+	if err == nil {
+		t.Error("expected non-nil error")
+	}
+	if status == 0 {
+		t.Error("expected non-zero status")
+	}
+}
+
+func TestRestrictMap(t *testing.T) {
+	var value map[string]int
+	opt := MapPluginConfigOption[int]{
+		Argument: "allowedintmap",
+		Default:  map[string]int{"1234": 1234},
+		Env:      "ENV",
+		Restrict: map[string]int{"1234": 2345},
+		Value:    &value,
+	}
+	options := []ConfigOption{&opt}
+	status, err := allowRestrictTestUtil(t, options, []string{"--allowedintmap", "1234=1234"})
+	if err != nil {
+		t.Errorf("unexpected error: %s", err)
+	}
+	if got, want := status, 0; got != want {
+		t.Errorf("unexpected status: got %d, want %d", got, want)
+	}
+	if got, want := value, map[string]int{"1234": 1234}; !cmp.Equal(got, want) {
+		t.Error(cmp.Diff(got, want))
+	}
+	status, err = allowRestrictTestUtil(t, options, []string{"--allowedintmap", "1234=2345"})
+	if err == nil {
+		t.Error("expected non-nil error")
+	}
+	if status == 0 {
+		t.Error("expected non-zero status")
+	}
 }
 
 func TestNewGoHandler_NoOptionValue(t *testing.T) {
