@@ -91,6 +91,16 @@ type SlicePluginConfigOption[T SliceOptionValue] struct {
 	// Restrict are ignored. If Allow is not set, or is set to an empty map,
 	// then Restrict is consulted.
 	Allow []T
+
+	// UseCobraStringArray instructs cobra to use the StringArrayVarP call
+	// instead of the StringSliceVarP call. This enables slightly different
+	// behaviour: space and comma separated values are considered single values,
+	// not lists to be split by cobra.
+	//
+	// Cobra only supports this mode of operation for lists of strings. If
+	// the SlicePluginConfigOption is instantiated with a non-string type, then
+	// this option will have no effect.
+	UseCobraStringArray bool
 }
 
 // MapPluginConfigOption is like PluginConfigOption, but permits using maps.
@@ -376,7 +386,11 @@ func (p *SlicePluginConfigOption[T]) SetupFlag(cmd *cobra.Command) error {
 	case *[]float64:
 		cmd.Flags().Float64SliceVarP(value, p.Argument, p.Shorthand, nil, p.Usage) // FIXME: viper lacks GetFloatSlice function
 	case *[]string:
-		cmd.Flags().StringSliceVarP(value, p.Argument, p.Shorthand, viper.GetStringSlice(p.Argument), p.Usage)
+		if p.UseCobraStringArray {
+			cmd.Flags().StringArrayVarP(value, p.Argument, p.Shorthand, viper.GetStringSlice(p.Argument), p.Usage)
+		} else {
+			cmd.Flags().StringSliceVarP(value, p.Argument, p.Shorthand, viper.GetStringSlice(p.Argument), p.Usage)
+		}
 	default:
 		return errors.New("setup flag: unknown value type")
 	}

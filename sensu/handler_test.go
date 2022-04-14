@@ -142,7 +142,7 @@ func TestNewGoHandler(t *testing.T) {
 	assert.Equal(t, os.Stdin, goHandler.framework.eventReader)
 }
 
-func allowRestrictTestUtil(t *testing.T, options []ConfigOption, args []string) (int, error) {
+func simpleTestUtil(t *testing.T, options []ConfigOption, args []string) (int, error) {
 	t.Helper()
 
 	noOp := func(*corev2.Event) error { return nil }
@@ -169,6 +169,60 @@ func allowRestrictTestUtil(t *testing.T, options []ConfigOption, args []string) 
 	return exitStatus, err
 }
 
+func TestUseCobraStringArray(t *testing.T) {
+	var value []string
+	opt := SlicePluginConfigOption[string]{
+		Argument:            "array",
+		Env:                 "ENV",
+		Value:               &value,
+		UseCobraStringArray: true,
+	}
+
+	options := []ConfigOption{&opt}
+	status, err := simpleTestUtil(t, options, []string{"--array", "hello world,hello"})
+	if err != nil {
+		t.Errorf("unexpected error: %s", err)
+	}
+	if got, want := status, 0; got != want {
+		t.Errorf("unexpected status: got %d, want %d", got, want)
+	}
+	if got, want := value, []string{"hello world,hello"}; !cmp.Equal(got, want) {
+		t.Error(cmp.Diff(got, want))
+	}
+	status, err = simpleTestUtil(t, options, []string{"--array", "hello", "--array", "world"})
+	if err != nil {
+		t.Errorf("unexpected error: %s", err)
+	}
+	if got, want := status, 0; got != want {
+		t.Errorf("unexpected status: got %d, want %d", got, want)
+	}
+	if got, want := value, []string{"hello", "world"}; !cmp.Equal(got, want) {
+		t.Error(cmp.Diff(got, want))
+	}
+}
+
+func TestUseCobraStringArrayWithoutString(t *testing.T) {
+	var value []int
+	opt := SlicePluginConfigOption[int]{
+		Argument:            "array",
+		Env:                 "ENV",
+		Value:               &value,
+		UseCobraStringArray: true,
+	}
+
+	options := []ConfigOption{&opt}
+	status, err := simpleTestUtil(t, options, []string{"--array", "1,2"})
+	if err != nil {
+		t.Errorf("unexpected error: %s", err)
+	}
+	if got, want := status, 0; got != want {
+		t.Errorf("unexpected status: got %d, want %d", got, want)
+	}
+	if got, want := value, []int{1, 2}; !cmp.Equal(got, want) {
+		t.Error(cmp.Diff(got, want))
+	}
+}
+
 func TestAllow(t *testing.T) {
 	var value int
 	opt := PluginConfigOption[int]{
@@ -180,7 +234,7 @@ func TestAllow(t *testing.T) {
 	}
 
 	options := []ConfigOption{&opt}
-	status, err := allowRestrictTestUtil(t, options, []string{"--allowedint", "1234"})
+	status, err := simpleTestUtil(t, options, []string{"--allowedint", "1234"})
 	if err != nil {
 		t.Errorf("unexpected error: %s", err)
 	}
@@ -190,7 +244,7 @@ func TestAllow(t *testing.T) {
 	if got, want := value, 1234; got != want {
 		t.Errorf("bad value: got %d, want %d", got, want)
 	}
-	status, err = allowRestrictTestUtil(t, options, []string{"--allowedint", "42"})
+	status, err = simpleTestUtil(t, options, []string{"--allowedint", "42"})
 	if err != nil {
 		t.Errorf("unexpected error: %s", err)
 	}
@@ -200,7 +254,7 @@ func TestAllow(t *testing.T) {
 	if got, want := value, 42; got != want {
 		t.Errorf("bad value: got %d, want %d", got, want)
 	}
-	status, err = allowRestrictTestUtil(t, options, []string{"--allowedint", "43"})
+	status, err = simpleTestUtil(t, options, []string{"--allowedint", "43"})
 	if err == nil {
 		t.Error("expected non-nil error")
 	}
@@ -220,7 +274,7 @@ func TestAllowSlice(t *testing.T) {
 	}
 
 	options := []ConfigOption{&opt}
-	status, err := allowRestrictTestUtil(t, options, []string{"--allowedintslice", "1234"})
+	status, err := simpleTestUtil(t, options, []string{"--allowedintslice", "1234"})
 	if err != nil {
 		t.Errorf("unexpected error: %s", err)
 	}
@@ -230,7 +284,7 @@ func TestAllowSlice(t *testing.T) {
 	if got, want := value, []int{1234}; !cmp.Equal(got, want) {
 		t.Error(cmp.Diff(got, want))
 	}
-	status, err = allowRestrictTestUtil(t, options, []string{"--allowedintslice", "2345"})
+	status, err = simpleTestUtil(t, options, []string{"--allowedintslice", "2345"})
 	if err != nil {
 		t.Errorf("unexpected error: %s", err)
 	}
@@ -240,7 +294,7 @@ func TestAllowSlice(t *testing.T) {
 	if got, want := value, []int{2345}; !cmp.Equal(got, want) {
 		t.Error(cmp.Diff(got, want))
 	}
-	status, err = allowRestrictTestUtil(t, options, []string{"--allowedintslice", "1234,2345"})
+	status, err = simpleTestUtil(t, options, []string{"--allowedintslice", "1234,2345"})
 	if err != nil {
 		t.Errorf("unexpected error: %s", err)
 	}
@@ -250,7 +304,7 @@ func TestAllowSlice(t *testing.T) {
 	if got, want := value, []int{1234, 2345}; !cmp.Equal(got, want) {
 		t.Error(cmp.Diff(got, want))
 	}
-	status, err = allowRestrictTestUtil(t, options, []string{"--allowedintslice", "1234,42"})
+	status, err = simpleTestUtil(t, options, []string{"--allowedintslice", "1234,42"})
 	if err == nil {
 		t.Error("expected non-nil error")
 	}
@@ -269,7 +323,7 @@ func TestAllowMap(t *testing.T) {
 		Value:    &value,
 	}
 	options := []ConfigOption{&opt}
-	status, err := allowRestrictTestUtil(t, options, []string{"--allowedintmap", "1234=1234"})
+	status, err := simpleTestUtil(t, options, []string{"--allowedintmap", "1234=1234"})
 	if err != nil {
 		t.Errorf("unexpected error: %s", err)
 	}
@@ -279,7 +333,7 @@ func TestAllowMap(t *testing.T) {
 	if got, want := value, map[string]int{"1234": 1234}; !cmp.Equal(got, want) {
 		t.Error(cmp.Diff(got, want))
 	}
-	status, err = allowRestrictTestUtil(t, options, []string{"--allowedintmap", "1234=2345"})
+	status, err = simpleTestUtil(t, options, []string{"--allowedintmap", "1234=2345"})
 	if err != nil {
 		t.Errorf("unexpected error: %s", err)
 	}
@@ -289,7 +343,7 @@ func TestAllowMap(t *testing.T) {
 	if got, want := value, map[string]int{"1234": 2345}; !cmp.Equal(got, want) {
 		t.Error(cmp.Diff(got, want))
 	}
-	status, err = allowRestrictTestUtil(t, options, []string{"--allowedintmap", "1234=2345,42=45"})
+	status, err = simpleTestUtil(t, options, []string{"--allowedintmap", "1234=2345,42=45"})
 	if err == nil {
 		t.Error("expected non-nil error")
 	}
@@ -309,7 +363,7 @@ func TestRestrict(t *testing.T) {
 	}
 
 	options := []ConfigOption{&opt}
-	status, err := allowRestrictTestUtil(t, options, []string{"--allowedint", "1234"})
+	status, err := simpleTestUtil(t, options, []string{"--allowedint", "1234"})
 	if err != nil {
 		t.Errorf("unexpected error: %s", err)
 	}
@@ -319,7 +373,7 @@ func TestRestrict(t *testing.T) {
 	if got, want := value, 1234; got != want {
 		t.Errorf("bad value: got %d, want %d", got, want)
 	}
-	status, err = allowRestrictTestUtil(t, options, []string{"--allowedint", "1000"})
+	status, err = simpleTestUtil(t, options, []string{"--allowedint", "1000"})
 	if err != nil {
 		t.Errorf("unexpected error: %s", err)
 	}
@@ -329,7 +383,7 @@ func TestRestrict(t *testing.T) {
 	if got, want := value, 1000; got != want {
 		t.Errorf("bad value: got %d, want %d", got, want)
 	}
-	status, err = allowRestrictTestUtil(t, options, []string{"--allowedint", "42"})
+	status, err = simpleTestUtil(t, options, []string{"--allowedint", "42"})
 	if err == nil {
 		t.Error("expected non-nil error")
 	}
@@ -349,7 +403,7 @@ func TestRestrictSlice(t *testing.T) {
 	}
 
 	options := []ConfigOption{&opt}
-	status, err := allowRestrictTestUtil(t, options, []string{"--allowedintslice", "1234,4321"})
+	status, err := simpleTestUtil(t, options, []string{"--allowedintslice", "1234,4321"})
 	if err != nil {
 		t.Errorf("unexpected error: %s", err)
 	}
@@ -359,7 +413,7 @@ func TestRestrictSlice(t *testing.T) {
 	if got, want := value, []int{1234, 4321}; !cmp.Equal(got, want) {
 		t.Error(cmp.Diff(got, want))
 	}
-	status, err = allowRestrictTestUtil(t, options, []string{"--allowedintslice", "1234,2345"})
+	status, err = simpleTestUtil(t, options, []string{"--allowedintslice", "1234,2345"})
 	if err == nil {
 		t.Error("expected non-nil error")
 	}
@@ -378,7 +432,7 @@ func TestRestrictMap(t *testing.T) {
 		Value:    &value,
 	}
 	options := []ConfigOption{&opt}
-	status, err := allowRestrictTestUtil(t, options, []string{"--allowedintmap", "1234=1234"})
+	status, err := simpleTestUtil(t, options, []string{"--allowedintmap", "1234=1234"})
 	if err != nil {
 		t.Errorf("unexpected error: %s", err)
 	}
@@ -388,7 +442,7 @@ func TestRestrictMap(t *testing.T) {
 	if got, want := value, map[string]int{"1234": 1234}; !cmp.Equal(got, want) {
 		t.Error(cmp.Diff(got, want))
 	}
-	status, err = allowRestrictTestUtil(t, options, []string{"--allowedintmap", "1234=2345"})
+	status, err = simpleTestUtil(t, options, []string{"--allowedintmap", "1234=2345"})
 	if err == nil {
 		t.Error("expected non-nil error")
 	}
