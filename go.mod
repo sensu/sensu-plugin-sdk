@@ -3,11 +3,12 @@ module github.com/sensu/sensu-plugin-sdk
 go 1.18
 
 require (
+	github.com/google/go-cmp v0.5.7
 	github.com/google/uuid v1.1.2
 	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.32.1
-	github.com/sensu/sensu-go/api/core/v2 v2.9.1-alpha
-	github.com/sensu/sensu-go/types v0.9.1-alpha2
+	github.com/sensu/sensu-go/api/core/v2 v2.14.0
+	github.com/sensu/sensu-go/types v0.10.0
 	github.com/sensu/sensu-licensing v0.1.2
 	github.com/spf13/cobra v1.4.0
 	github.com/spf13/viper v1.7.0
@@ -23,7 +24,6 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.0.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
-	github.com/google/go-cmp v0.5.7 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.3 // indirect
