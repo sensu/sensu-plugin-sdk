@@ -43,9 +43,11 @@ Configuration options are read from the following sources using the following pr
 ```Go
 var (
   argumentValue string
+  sliceArgument []float64
+  mapArgument   map[string]int
 
-  options = []*sensu.HandlerConfigOption{
-    {
+  options = []sensu.ConfigOption{
+    &sensu.PluginConfigOption[string]{
       Path:      "override-path",
       Env:       "COMMAND_LINE_ENVIRONMENT",
       Argument:  "command-line-argument",
@@ -53,6 +55,24 @@ var (
       Default:   "Default Value",
       Usage:     "The usage message printed for this option",
       Value:     &argumentValue,
+    },
+    &sensu.SlicePluginConfigOption[float64]{
+      Path:      "override-path",
+      Env:       "COMMAND_LINE_ENVIRONMENT",
+      Argument:  "command-line-argument",
+      Shorthand: "c",
+      Default:   []float64{0.1},
+      Usage:     "The usage message printed for this option",
+      Value:     &sliceArgument,
+    },
+    &sensu.MapPluginConfigOption[int]{
+      Path:      "override-path",
+      Env:       "COMMAND_LINE_ENVIRONMENT",
+      Argument:  "command-line-argument",
+      Shorthand: "c",
+      Default:   map[string]int{"hello": 123},
+      Usage:     "The usage message printed for this option",
+      Value:     &mapArgument,
     },
   }
 )
@@ -106,8 +126,8 @@ options, validation function and execution function.
 
 ```Go
 func main() {
-  goHandler := sensu.NewGoHandler(&config.HandlerConfig, options, validateInput, executeHandler)
-  err := goHandler.Execute()
+  handler := sensu.NewHandler(&config.HandlerConfig, options, validateInput, executeHandler)
+  err := handler.Execute()
 }
 
 ```
@@ -115,13 +135,13 @@ func main() {
 ## Enterprise plugins
 
 An enterprise plugin requires a valid Sensu license to run. Initialize enterprise handlers with
-`NewEnterpriseGoHandler`. If the license file passed from the handler's environment variables is
+`NewEnterpriseHandler`. If the license file passed from the handler's environment variables is
 invalid, it should return an error without executing.
 
 ```Go
 func main() {
-  goHandler := sensu.NewEnterpriseGoHandler(&config.HandlerConfig, options, validateInput, executeHandler)
-  err := goHandler.Execute()
+  handler := sensu.NewEnterpriseHandler(&config.HandlerConfig, options, validateInput, executeHandler)
+  err := handler.Execute()
 }
 
 ```
@@ -152,7 +172,7 @@ A Sensu Go event contains multiple timestamps (e.g. .Check.Issued,
 .Check.Executed, .Check.LastOk) that are presented in UNIX timestamp format.  A
 function named UnixTime is provided to print these values in a customizable
 human readable format as part of a template.  To customize the output format of
-the timestamp, use the same format as specified by Golang's [Time.Format][2].
+the timestamp, use the same format as specified by Go's [time.Format][2].
 Additional examples can be found [here][3].
 
 **Note:** the predefined format constants are **not** available.
