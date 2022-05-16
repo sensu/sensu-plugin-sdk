@@ -359,8 +359,9 @@ func (p *PluginConfigOption[T]) SetupFlag(cmd *cobra.Command) error {
 		case reflect.String:
 			ptr := reflect.ValueOf(p.Value).Convert(reflect.TypeOf(new(string))).Interface().(*string)
 			cmd.Flags().StringVarP(ptr, p.Argument, p.Shorthand, viper.GetString(p.Argument), p.Usage)
+		default:
+			return fmt.Errorf("setup flag: %s: unknown value type", p.Argument)
 		}
-		return fmt.Errorf("setup flag: %s: unknown value type", p.Argument)
 	}
 	flag := cmd.Flags().Lookup(p.Argument)
 	// Set empty DefValue string if option is a secret
