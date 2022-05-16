@@ -303,7 +303,7 @@ func (p *PluginConfigOption[T]) SetupFlag(cmd *cobra.Command) error {
 		return nil
 	}
 	if p.Value == nil {
-		return errors.New("setup flag: couldn't write into nil value")
+		return fmt.Errorf("setup flag: %s: couldn't write into nil value", p.Argument)
 	}
 	err := viper.BindEnv(p.Argument, p.Env)
 	if err != nil {
@@ -336,7 +336,7 @@ func (p *PluginConfigOption[T]) SetupFlag(cmd *cobra.Command) error {
 	case *string:
 		cmd.Flags().StringVarP(value, p.Argument, p.Shorthand, viper.GetString(p.Argument), p.Usage)
 	default:
-		return errors.New("setup flag: unknown value type")
+		return fmt.Errorf("setup flag: %s: unknown value type", p.Argument)
 	}
 	flag := cmd.Flags().Lookup(p.Argument)
 	// Set empty DefValue string if option is a secret
