@@ -357,9 +357,7 @@ func (p *PluginConfigOption[T]) SetupFlag(cmd *cobra.Command) error {
 		case reflect.Float64:
 			cmd.Flags().Float64VarP(ptr.(*float64), p.Argument, p.Shorthand, viper.GetFloat64(p.Argument), p.Usage)
 		case reflect.String:
-			newType := reflect.TypeOf("")
-			rvalue = rvalue.Convert(newType)
-			ptr := rvalue.Addr().Interface().(*string)
+			ptr := reflect.ValueOf(p.Value).Convert(reflect.TypeOf(new(string))).Interface().(*string)
 			cmd.Flags().StringVarP(ptr, p.Argument, p.Shorthand, viper.GetString(p.Argument), p.Usage)
 		}
 		return fmt.Errorf("setup flag: %s: unknown value type", p.Argument)
