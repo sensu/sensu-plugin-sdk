@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"reflect"
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
@@ -336,6 +337,28 @@ func (p *PluginConfigOption[T]) SetupFlag(cmd *cobra.Command) error {
 	case *string:
 		cmd.Flags().StringVarP(value, p.Argument, p.Shorthand, viper.GetString(p.Argument), p.Usage)
 	default:
+		rvalue := reflect.Indirect(reflect.ValueOf(p.Value))
+		ptr := rvalue.Addr().Interface()
+		switch rvalue.Kind() {
+		case reflect.Bool:
+			cmd.Flags().BoolVarP(ptr.(*bool), p.Argument, p.Shorthand, viper.GetBool(p.Argument), p.Usage)
+		case reflect.Int:
+			cmd.Flags().IntVarP(ptr.(*int), p.Argument, p.Shorthand, viper.GetInt(p.Argument), p.Usage)
+		case reflect.Int32:
+			cmd.Flags().Int32VarP(ptr.(*int32), p.Argument, p.Shorthand, viper.GetInt32(p.Argument), p.Usage)
+		case reflect.Int64:
+			cmd.Flags().Int64VarP(ptr.(*int64), p.Argument, p.Shorthand, viper.GetInt64(p.Argument), p.Usage)
+		case reflect.Uint:
+			cmd.Flags().UintVarP(ptr.(*uint), p.Argument, p.Shorthand, viper.GetUint(p.Argument), p.Usage)
+		case reflect.Uint32:
+			cmd.Flags().Uint32VarP(ptr.(*uint32), p.Argument, p.Shorthand, viper.GetUint32(p.Argument), p.Usage)
+		case reflect.Uint64:
+			cmd.Flags().Uint64VarP(ptr.(*uint64), p.Argument, p.Shorthand, viper.GetUint64(p.Argument), p.Usage)
+		case reflect.Float64:
+			cmd.Flags().Float64VarP(ptr.(*float64), p.Argument, p.Shorthand, viper.GetFloat64(p.Argument), p.Usage)
+		case reflect.String:
+			cmd.Flags().StringVarP(ptr.(*string), p.Argument, p.Shorthand, viper.GetString(p.Argument), p.Usage)
+		}
 		return fmt.Errorf("setup flag: %s: unknown value type", p.Argument)
 	}
 	flag := cmd.Flags().Lookup(p.Argument)
