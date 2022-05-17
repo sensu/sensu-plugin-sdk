@@ -6,6 +6,25 @@ and this project adheres to [Semantic
 Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+## [0.156.0] - 2022-05-17
+
+### Changed
+- Requires Go 1.18.x
+- Argument parsing now makes use of Go generics
+- Refactor to use sensu-go/api/core/v2  go module instead of ensu-go/types for resource type definitions
+
+### Added
+- Add support for string slice and string map argument types
+- Added support for custom types ( such as enums ) to argument handling
+
+### Deprecated
+- GoCheck Deprecated: use Check
+- NewGoCheck Deprecated: use NewCheck
+- GoHandler Deprecated: use Handler instead.
+- NewGoHandler Deprecated: use NewHandler
+- NewEnterpriseGoHandler Deprecated: use NewEnterpriseHandler
+- GoMutator Deprecated: use Mutator
+- NewGoMutator Deprecated: use NewMutator
 
 ## [0.15.0] - 2022-02-17
 ### Changed
