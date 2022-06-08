@@ -141,6 +141,50 @@ func TestNewGoHandler(t *testing.T) {
 	assert.Nil(t, goHandler.framework.GetStdinEvent())
 	assert.Equal(t, os.Stdin, goHandler.framework.eventReader)
 }
+func TestNewHandler(t *testing.T) {
+	values := &handlerValues{}
+	options := getHandlerOptions(values)
+	goHandler := NewHandler(&defaultHandlerConfig, options, func(event *corev2.Event) error {
+		return nil
+	}, func(event *corev2.Event) error {
+		return nil
+	})
+
+	assert.NotNil(t, goHandler)
+	assert.NotNil(t, goHandler.framework.options)
+	assert.Equal(t, options, goHandler.framework.options)
+	assert.NotNil(t, goHandler.framework.config)
+	assert.Equal(t, &defaultHandlerConfig, goHandler.framework.config)
+	assert.NotNil(t, goHandler.validationFunction)
+	assert.NotNil(t, goHandler.executeFunction)
+	assert.Nil(t, goHandler.framework.GetStdinEvent())
+	assert.Equal(t, os.Stdin, goHandler.framework.eventReader)
+}
+func TestDisableReadEvent(t *testing.T) {
+	values := &handlerValues{}
+	options := getHandlerOptions(values)
+	goHandler := NewHandler(&defaultHandlerConfig, options, func(event *corev2.Event) error {
+		return nil
+	}, func(event *corev2.Event) error {
+		return nil
+	})
+	assert.NotNil(t, goHandler)
+	assert.Equal(t, true, goHandler.framework.readEvent)
+	goHandler.DisableReadEvent()
+	assert.Equal(t, false, goHandler.framework.readEvent)
+}
+func TestDisableEventValidation(t *testing.T) {
+	values := &handlerValues{}
+	options := getHandlerOptions(values)
+	goHandler := NewHandler(&defaultHandlerConfig, options, func(event *corev2.Event) error {
+		return nil
+	}, func(event *corev2.Event) error {
+		return nil
+	})
+	assert.Equal(t, true, goHandler.framework.eventValidation)
+	goHandler.DisableEventValidation()
+	assert.Equal(t, false, goHandler.framework.eventValidation)
+}
 
 func simpleTestUtil(t *testing.T, options []ConfigOption, args []string) (int, error) {
 	t.Helper()

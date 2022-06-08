@@ -120,3 +120,13 @@ func (h *Handler) workflow(_ []string) (int, error) {
 func (h *Handler) Execute() {
 	h.framework.Execute()
 }
+
+// Disable Handler Event read
+func (h *Handler) DisableReadEvent() {
+	h.framework.SetEventRead(false)
+}
+
+// Disable Handler Event validation
+func (h *Handler) DisableEventValidation() {
+	h.framework.SetEventValidation(false)
+}
