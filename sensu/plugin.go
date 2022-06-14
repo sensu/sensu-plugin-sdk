@@ -11,6 +11,7 @@ import (
 	"path"
 	"reflect"
 	"strings"
+	"unicode"
 
 	"github.com/google/go-cmp/cmp"
 	corev2 "github.com/sensu/sensu-go/api/core/v2"
@@ -297,6 +298,22 @@ func (p *pluginFramework) setupFlags(cmd *cobra.Command) error {
 	return nil
 }
 
+func kebabCase(snakeCase string) string {
+	var result strings.Builder
+	result.Grow(2 * len(snakeCase))
+	for i, run3 := range snakeCase {
+		if unicode.IsUpper(run3) && i > 0 {
+			result.WriteRune('-')
+		}
+		if unicode.IsUpper(run3) {
+			result.WriteRune(unicode.ToLower(run3))
+		} else {
+			result.WriteRune(run3)
+		}
+	}
+	return result.String()
+}
+
 // SetupFlag sets up the option's command line flag, and also binds the
 // associated environment variable, and default value.
 func (p *PluginConfigOption[T]) SetupFlag(cmd *cobra.Command) error {
@@ -313,57 +330,57 @@ func (p *PluginConfigOption[T]) SetupFlag(cmd *cobra.Command) error {
 	viper.SetDefault(p.Argument, p.Default)
 	switch value := (interface{}(p.Value)).(type) {
 	case *bool:
-		cmd.Flags().BoolVarP(value, p.Argument, p.Shorthand, viper.GetBool(p.Argument), p.Usage)
+		cmd.Flags().BoolVarP(value, kebabCase(p.Argument), p.Shorthand, viper.GetBool(p.Argument), p.Usage)
 	case *int:
-		cmd.Flags().IntVarP(value, p.Argument, p.Shorthand, viper.GetInt(p.Argument), p.Usage)
+		cmd.Flags().IntVarP(value, kebabCase(p.Argument), p.Shorthand, viper.GetInt(p.Argument), p.Usage)
 	case *int32:
-		cmd.Flags().Int32VarP(value, p.Argument, p.Shorthand, viper.GetInt32(p.Argument), p.Usage)
+		cmd.Flags().Int32VarP(value, kebabCase(p.Argument), p.Shorthand, viper.GetInt32(p.Argument), p.Usage)
 	case *int64:
-		cmd.Flags().Int64VarP(value, p.Argument, p.Shorthand, viper.GetInt64(p.Argument), p.Usage)
+		cmd.Flags().Int64VarP(value, kebabCase(p.Argument), p.Shorthand, viper.GetInt64(p.Argument), p.Usage)
 	case *uint:
-		cmd.Flags().UintVarP(value, p.Argument, p.Shorthand, viper.GetUint(p.Argument), p.Usage)
+		cmd.Flags().UintVarP(value, kebabCase(p.Argument), p.Shorthand, viper.GetUint(p.Argument), p.Usage)
 	case *uint32:
-		cmd.Flags().Uint32VarP(value, p.Argument, p.Shorthand, viper.GetUint32(p.Argument), p.Usage)
+		cmd.Flags().Uint32VarP(value, kebabCase(p.Argument), p.Shorthand, viper.GetUint32(p.Argument), p.Usage)
 	case *uint64:
-		cmd.Flags().Uint64VarP(value, p.Argument, p.Shorthand, viper.GetUint64(p.Argument), p.Usage)
+		cmd.Flags().Uint64VarP(value, kebabCase(p.Argument), p.Shorthand, viper.GetUint64(p.Argument), p.Usage)
 	case *float32:
-		cmd.Flags().Float32VarP(value, p.Argument, p.Shorthand, float32(viper.GetFloat64(p.Argument)), p.Usage)
+		cmd.Flags().Float32VarP(value, kebabCase(p.Argument), p.Shorthand, float32(viper.GetFloat64(p.Argument)), p.Usage)
 	case *float64:
-		cmd.Flags().Float64VarP(value, p.Argument, p.Shorthand, viper.GetFloat64(p.Argument), p.Usage)
+		cmd.Flags().Float64VarP(value, kebabCase(p.Argument), p.Shorthand, viper.GetFloat64(p.Argument), p.Usage)
 	case *map[string]string:
-		cmd.Flags().StringToStringVarP(value, p.Argument, p.Shorthand, viper.GetStringMapString(p.Argument), p.Usage)
+		cmd.Flags().StringToStringVarP(value, kebabCase(p.Argument), p.Shorthand, viper.GetStringMapString(p.Argument), p.Usage)
 	case *[]string:
-		cmd.Flags().StringSliceVarP(value, p.Argument, p.Shorthand, viper.GetStringSlice(p.Argument), p.Usage)
+		cmd.Flags().StringSliceVarP(value, kebabCase(p.Argument), p.Shorthand, viper.GetStringSlice(p.Argument), p.Usage)
 	case *string:
-		cmd.Flags().StringVarP(value, p.Argument, p.Shorthand, viper.GetString(p.Argument), p.Usage)
+		cmd.Flags().StringVarP(value, kebabCase(p.Argument), p.Shorthand, viper.GetString(p.Argument), p.Usage)
 	default:
 		rvalue := reflect.Indirect(reflect.ValueOf(p.Value))
 		ptr := rvalue.Addr().Interface()
 		switch rvalue.Kind() {
 		case reflect.Bool:
-			cmd.Flags().BoolVarP(ptr.(*bool), p.Argument, p.Shorthand, viper.GetBool(p.Argument), p.Usage)
+			cmd.Flags().BoolVarP(ptr.(*bool), kebabCase(p.Argument), p.Shorthand, viper.GetBool(p.Argument), p.Usage)
 		case reflect.Int:
-			cmd.Flags().IntVarP(ptr.(*int), p.Argument, p.Shorthand, viper.GetInt(p.Argument), p.Usage)
+			cmd.Flags().IntVarP(ptr.(*int), kebabCase(p.Argument), p.Shorthand, viper.GetInt(p.Argument), p.Usage)
 		case reflect.Int32:
-			cmd.Flags().Int32VarP(ptr.(*int32), p.Argument, p.Shorthand, viper.GetInt32(p.Argument), p.Usage)
+			cmd.Flags().Int32VarP(ptr.(*int32), kebabCase(p.Argument), p.Shorthand, viper.GetInt32(p.Argument), p.Usage)
 		case reflect.Int64:
-			cmd.Flags().Int64VarP(ptr.(*int64), p.Argument, p.Shorthand, viper.GetInt64(p.Argument), p.Usage)
+			cmd.Flags().Int64VarP(ptr.(*int64), kebabCase(p.Argument), p.Shorthand, viper.GetInt64(p.Argument), p.Usage)
 		case reflect.Uint:
-			cmd.Flags().UintVarP(ptr.(*uint), p.Argument, p.Shorthand, viper.GetUint(p.Argument), p.Usage)
+			cmd.Flags().UintVarP(ptr.(*uint), kebabCase(p.Argument), p.Shorthand, viper.GetUint(p.Argument), p.Usage)
 		case reflect.Uint32:
-			cmd.Flags().Uint32VarP(ptr.(*uint32), p.Argument, p.Shorthand, viper.GetUint32(p.Argument), p.Usage)
+			cmd.Flags().Uint32VarP(ptr.(*uint32), kebabCase(p.Argument), p.Shorthand, viper.GetUint32(p.Argument), p.Usage)
 		case reflect.Uint64:
-			cmd.Flags().Uint64VarP(ptr.(*uint64), p.Argument, p.Shorthand, viper.GetUint64(p.Argument), p.Usage)
+			cmd.Flags().Uint64VarP(ptr.(*uint64), kebabCase(p.Argument), p.Shorthand, viper.GetUint64(p.Argument), p.Usage)
 		case reflect.Float64:
-			cmd.Flags().Float64VarP(ptr.(*float64), p.Argument, p.Shorthand, viper.GetFloat64(p.Argument), p.Usage)
+			cmd.Flags().Float64VarP(ptr.(*float64), kebabCase(p.Argument), p.Shorthand, viper.GetFloat64(p.Argument), p.Usage)
 		case reflect.String:
 			ptr := reflect.ValueOf(p.Value).Convert(reflect.TypeOf(new(string))).Interface().(*string)
-			cmd.Flags().StringVarP(ptr, p.Argument, p.Shorthand, viper.GetString(p.Argument), p.Usage)
+			cmd.Flags().StringVarP(ptr, kebabCase(p.Argument), p.Shorthand, viper.GetString(p.Argument), p.Usage)
 		default:
 			return fmt.Errorf("setup flag: %s: unknown value type", p.Argument)
 		}
 	}
-	flag := cmd.Flags().Lookup(p.Argument)
+	flag := cmd.Flags().Lookup(kebabCase(p.Argument))
 	// Set empty DefValue string if option is a secret
 	// DefValue is only used for pflag usage message construction
 	if p.Secret {

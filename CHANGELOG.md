@@ -7,6 +7,14 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+### Fixed
+- Fixed a regression where camelcase names were not being kebab-cased in the CLI.
+
+## [0.16.0]
+
+### Changed
+- Added support for Go generics
+
 ## [0.15.0] - 2022-02-17
 ### Changed
 - Removed aws specific functionality, that will now exist as part of cloudwatch plugin

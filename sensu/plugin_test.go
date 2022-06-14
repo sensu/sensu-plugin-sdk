@@ -399,3 +399,21 @@ func TestSetMapOptionValueAllowAndRestrict(t *testing.T) {
 		t.Error("expected non-nil error")
 	}
 }
+
+func TestKebabCase(t *testing.T) {
+	tests := map[string]string{
+		"HaHa":  "ha-ha",
+		"HaH":   "ha-h",
+		"haha":  "haha",
+		"Haha":  "haha",
+		"haHa":  "ha-ha",
+		"ha-ha": "ha-ha",
+	}
+	for test, want := range tests {
+		t.Run(test, func(t *testing.T) {
+			if got := kebabCase(test); got != want {
+				t.Errorf("bad kebab case: got %q, want %q", got, want)
+			}
+		})
+	}
+}
