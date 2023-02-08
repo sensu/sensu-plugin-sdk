@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	corev2 "github.com/sensu/sensu-go/api/core/v2"
+	corev2 "github.com/sensu/core/v2"
 )
 
 type checkValues struct {

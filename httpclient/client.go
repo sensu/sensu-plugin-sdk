@@ -13,8 +13,8 @@ import (
 	"net/http"
 	"path"
 
-	corev2 "github.com/sensu/sensu-go/api/core/v2"
-	"github.com/sensu/sensu-go/types"
+	corev2 "github.com/sensu/core/v2"
+	apitools "github.com/sensu/sensu-api-tools"
 )
 
 // ResourceRequest specifies a request for a resource. Use NewResourceRequest
@@ -36,9 +36,13 @@ func (r ResourceRequest) String() string {
 //
 // This generic method of resource lookup does not work for Events.
 func NewResourceRequest(apiVersion, typeName, namespace, name string) (ResourceRequest, error) {
-	resource, err := types.ResolveType(apiVersion, typeName)
+	value, err := apitools.Resolve(apiVersion, typeName)
 	if err != nil {
 		return ResourceRequest{}, err
+	}
+	resource, ok := value.(corev2.Resource)
+	if !ok {
+		return ResourceRequest{}, fmt.Errorf("%T is not a core/v2.Resource", value)
 	}
 	resource.SetObjectMeta(corev2.ObjectMeta{
 		Namespace: namespace,

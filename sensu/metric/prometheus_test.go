@@ -10,7 +10,7 @@ import (
 
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
-	corev2 "github.com/sensu/sensu-go/api/core/v2"
+	corev2 "github.com/sensu/core/v2"
 	"github.com/sensu/sensu-plugin-sdk/sensu/metric"
 	"github.com/stretchr/testify/assert"
 )

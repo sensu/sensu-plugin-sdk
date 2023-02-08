@@ -6,8 +6,8 @@ import (
 	"log"
 	"os"
 
-	corev2 "github.com/sensu/sensu-go/api/core/v2"
-	"github.com/sensu/sensu-licensing/api/licensing"
+	corev2 "github.com/sensu/core/v2"
+	"github.com/sensu/sensu-licensing/v2/api/licensing"
 )
 
 // Handler is a framework for writing Sensu handlers.

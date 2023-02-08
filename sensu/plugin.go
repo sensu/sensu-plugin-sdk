@@ -13,7 +13,7 @@ import (
 	"strings"
 
 	"github.com/google/go-cmp/cmp"
-	corev2 "github.com/sensu/sensu-go/api/core/v2"
+	corev2 "github.com/sensu/core/v2"
 	"github.com/sensu/sensu-plugin-sdk/version"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"

@@ -6,7 +6,20 @@ and this project adheres to [Semantic
 Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
-## [0.156.0] - 2022-05-17
+
+## [0.17.0] - 2023-02-07
+
+### Breaking
+- Moved from github.com/sensu/sensu-go/api/core/v2 to github.com/sensu/core/v2.
+This breaks all existing consumers of the library. Luckily, the fix is simple.
+Just replace all core/v2 imports with the new library at github.com/sensu/core.
+Doing this saves Go from needing to deal with the entirety of sensu-go, and
+will be beneficial to library users long-term by speeding up builds.
+
+### Changed
+- Upgraded sensu-licensing to the newest version.
+
+## [0.16.0] - 2022-05-17
 
 ### Changed
 - Requires Go 1.18.x
