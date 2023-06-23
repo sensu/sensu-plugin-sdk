@@ -40,7 +40,7 @@ type ConfigOption interface {
 // OptionValue is a type constraint that creates a compile-time guard against
 // creating a PluginConfigOption with an unsupported data type.
 type OptionValue interface {
-	~int | ~int32 | ~int64 | ~uint | ~uint32 | ~uint64 | ~float32 | ~float64 | ~bool | ~string
+	~int | ~int32 | ~int64 | ~uint | ~uint32 | ~uint64 | ~float32 | ~float64 | ~bool | ~string | ~[]string
 }
 
 // SliceOptionValue is like OptionValue but applies to SlicePluginConfigOption.
