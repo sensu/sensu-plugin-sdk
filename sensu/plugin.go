@@ -223,6 +223,13 @@ func (p *pluginFramework) SetWorkflow(f func([]string) (int, error)) {
 	p.pluginWorkflowFunction = f
 }
 
+func (p *pluginFramework) SetEventRead(f bool) {
+	p.readEvent = f
+}
+func (p *pluginFramework) SetEventValidation(f bool) {
+	p.eventValidation = f
+}
+
 func (p *pluginFramework) readSensuEvent() error {
 	eventJSON, err := ioutil.ReadAll(p.eventReader)
 	if err != nil {
