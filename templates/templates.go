@@ -2,11 +2,13 @@ package templates
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
 	"os"
 	"text/template"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 func EvalTemplate(templName, templStr string, templSrc interface{}) (string, error) {
@@ -21,6 +23,7 @@ func EvalTemplate(templName, templStr string, templSrc interface{}) (string, err
 		"UnixTime":      func(i int64) time.Time { return time.Unix(i, 0) },
 		"UUIDFromBytes": uuid.FromBytes,
 		"Hostname":      os.Hostname,
+		"toJSON":        toJSON,
 	}).Parse(templStr)
 	if err != nil {
 		return "", fmt.Errorf("Error building template: %s", err)
@@ -33,4 +36,12 @@ func EvalTemplate(templName, templStr string, templSrc interface{}) (string, err
 	}
 
 	return buf.String(), nil
+}
+
+func toJSON(i any) string {
+	b, err := json.Marshal(i)
+	if err != nil {
+		return ""
+	}
+	return string(b)
 }
