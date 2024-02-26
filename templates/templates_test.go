@@ -18,6 +18,7 @@ var (
 	templateOkHostname  = "Check: {{ .Check.Name }} Entity: {{ .Entity.Name }} Hostname: {{Hostname}} !"
 	templateVarNotFound = "Check: {{ .Check.NameZZZ }} Entity: {{ .Entity.Name }} !"
 	templateInvalid     = "Check: {{ .Check.Name Entity: {{ .Entity.Name }} !"
+	templateJSON        = `{"name": "{{ .Check.Name }}", "output": {{ toJSON .Check.Output }}}`
 )
 
 // Valid test
@@ -98,4 +99,16 @@ func TestEvalTemplate_InvalidTemplate(t *testing.T) {
 	result, err := EvalTemplate("templOk", templateInvalid, event)
 	assert.Equal(t, "", result)
 	assert.NotNil(t, err)
+}
+
+// JSON template
+func TestEvalTemplate_JSONTemplate(t *testing.T) {
+	event := &corev2.Event{}
+	event.Check = &corev2.Check{}
+	event.Check.Name = "foo"
+	event.Check.Output = "foo\nbar"
+
+	result, err := EvalTemplate("templOk", templateJSON, event)
+	assert.Equal(t, `{"name": "foo", "output": "foo\nbar"}`, result)
+	assert.Nil(t, err)
 }
