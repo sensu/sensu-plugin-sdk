@@ -7,6 +7,16 @@ Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
 
+## [0.18.0] - 2023-02-27
+
+### Added
+- Add toJSON func to templates.
+
+## [0.18.0] - 2023-02-08
+
+### Changed
+- Make use of the github.com/sensu/core module.
+
 ## [0.17.0] - 2023-02-07
 
 ### Breaking
